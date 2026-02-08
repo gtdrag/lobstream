@@ -4,7 +4,10 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const sourcesFilter = searchParams.get('sources')?.split(',').filter(Boolean) || [];
   const topicsFilter = searchParams.get('topics')?.split(',').filter(Boolean) || [];
-  const after = searchParams.get('after') || '0-0';
+  // On reconnect, EventSource sends Last-Event-ID header automatically.
+  // Use it to resume from where we left off instead of re-reading everything.
+  const lastEventId = req.headers.get('Last-Event-ID');
+  const after = lastEventId || searchParams.get('after') || '0-0';
 
   const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
   const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -116,7 +119,7 @@ export default async function handler(req) {
               }
 
               const event =
-                `id: ${msg.ts || id}\n` +
+                `id: ${id}\n` +
                 `event: post\n` +
                 `data: ${JSON.stringify(msg)}\n\n`;
               enqueue(event);

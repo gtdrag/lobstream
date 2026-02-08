@@ -145,7 +145,9 @@ function processPost(post, board, results) {
   // Mark as seen immediately (even if we skip it) to avoid re-processing
   markSeen(postKey);
 
-  const text = stripHtml(post.com);
+  let text = stripHtml(post.com);
+  // Strip >>123456789 reply references — meaningless outside 4chan
+  text = text.replace(/>>\d{5,}/g, '').replace(/\s+/g, ' ').trim();
   if (!text || text.length < MIN_TEXT_LENGTH) return;
   if (!isMostlyEnglish(text)) return;
 

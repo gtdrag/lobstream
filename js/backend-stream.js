@@ -9,6 +9,7 @@ export class BackendStream {
     this.eventSource = null;
     this.queue = [];
     this.feedInterval = null;
+    this.seen = new Set();
   }
 
   connect() {
@@ -28,6 +29,16 @@ export class BackendStream {
 
     this.eventSource.addEventListener('post', (e) => {
       try {
+        const id = e.lastEventId;
+        if (id && this.seen.has(id)) return;
+        if (id) {
+          this.seen.add(id);
+          if (this.seen.size > 500) {
+            const it = this.seen.values();
+            for (let i = 0; i < 200; i++) it.next();
+            this.seen = new Set(Array.from(it));
+          }
+        }
         const data = JSON.parse(e.data);
         if (this.queue.length < MAX_QUEUE_SIZE) {
           this.queue.push({
