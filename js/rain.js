@@ -21,7 +21,7 @@ const COLORS = [
   'rgb(185, 215, 215)',  // sea glass
 ];
 
-const SHAPES = ['rect', 'circle', 'diamond', 'oval'];
+const SHAPES = ['rect'];
 const STYLES = ['normal', 'italic'];
 const WEIGHTS = ['300', '400', '500'];
 
