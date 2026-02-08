@@ -13,8 +13,8 @@ const INSTANCES = [
   'fosstodon.org',       // FOSS / tech
   'hachyderm.io',        // tech-focused
   'mas.to',              // general
-  'mastodon.social',     // flagship — largest, diverse
-  'mastodon.online',     // official general instance
+  'chaos.social',         // progressive / CCC-adjacent
+  'aus.social',           // Australian, progressive-leaning
   'kolektiva.social',    // leftist / activist / anarchist
   'universeodon.com',    // large general, progressive-leaning
   'mstdn.social',        // general
