@@ -1,6 +1,6 @@
 const WIKIPEDIA_URL = 'https://stream.wikimedia.org/v2/stream/recentchange';
 const MAX_QUEUE_SIZE = 200;
-const FEED_RATE_MS = 350; // ~3 new drops per second
+const FEED_RATE_MS = 8000;
 
 export class Wikipedia {
   constructor(onPost) {

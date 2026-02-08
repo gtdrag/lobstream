@@ -1,7 +1,7 @@
 const HN_API = 'https://hacker-news.firebaseio.com/v0';
 const POLL_INTERVAL_MS = 7000; // poll for new items every 7 seconds
 const MAX_QUEUE_SIZE = 200;
-const FEED_RATE_MS = 350; // ~3 new drops per second
+const FEED_RATE_MS = 8000;
 
 export class HackerNews {
   constructor(onPost) {

@@ -1,6 +1,6 @@
 const JETSTREAM_URL = 'wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post';
 const MAX_QUEUE_SIZE = 200;
-const FEED_RATE_MS = 350; // ~3 new drops per second
+const FEED_RATE_MS = 8000; // one drop every ~8 seconds
 
 export class Jetstream {
   constructor(onPost) {
@@ -38,12 +38,27 @@ export class Jetstream {
           data.kind === 'commit' &&
           data.commit &&
           data.commit.operation === 'create' &&
-          data.commit.record &&
-          data.commit.record.text
+          data.commit.record
         ) {
-          const text = data.commit.record.text.trim();
-          if (text.length > 0 && this.queue.length < MAX_QUEUE_SIZE) {
-            this.queue.push(text);
+          const record = data.commit.record;
+          const text = (record.text || '').trim();
+          let imageUrl = null;
+
+          // Extract image from embed if present
+          if (
+            record.embed &&
+            record.embed.$type === 'app.bsky.embed.images' &&
+            record.embed.images &&
+            record.embed.images.length > 0
+          ) {
+            const img = record.embed.images[0];
+            if (img.image && img.image.ref && img.image.ref.$link) {
+              imageUrl = `https://cdn.bsky.app/img/feed_thumbnail/plain/${data.did}/${img.image.ref.$link}@jpeg`;
+            }
+          }
+
+          if ((text.length > 0 || imageUrl) && this.queue.length < MAX_QUEUE_SIZE) {
+            this.queue.push({ text, imageUrl });
           }
         }
       } catch (e) {
@@ -74,8 +89,8 @@ export class Jetstream {
     if (this.feedInterval) return;
     this.feedInterval = setInterval(() => {
       if (this.queue.length > 0) {
-        const text = this.queue.shift();
-        this.onPost(text);
+        const item = this.queue.shift();
+        this.onPost(item.text, item.imageUrl);
       }
     }, FEED_RATE_MS);
   }

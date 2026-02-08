@@ -13,7 +13,7 @@ const rain = new Rain(rainCanvas);
 const reflection = new Reflection(reflectionCanvas);
 
 // Shared callback — all sources feed into the same rain
-const addDrop = (text) => rain.addDrop(text);
+const addDrop = (text, imageUrl) => rain.addDrop(text, imageUrl);
 
 // Connect all data sources
 const jetstream = new Jetstream(addDrop);
