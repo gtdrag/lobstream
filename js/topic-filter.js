@@ -25,7 +25,17 @@ const AI_CODING_PATTERN = new RegExp([
   'OpenClaw', 'Clawdbot', 'lobstream', 'open.?claw',
 ].map(kw => `\\b${kw}\\b`).join('|'), 'i');
 
+// Check if text is mostly English (Latin characters).
+// Returns true if >= 70% of letter characters are Latin.
+function isMostlyEnglish(text) {
+  const letters = text.replace(/[\s\d\p{P}\p{S}]/gu, '');
+  if (letters.length === 0) return false;
+  const latinCount = (letters.match(/[a-zA-Z\u00C0-\u024F]/g) || []).length;
+  return latinCount / letters.length >= 0.7;
+}
+
 export function matchesAICoding(text) {
   if (!text) return false;
+  if (!isMostlyEnglish(text)) return false;
   return AI_CODING_PATTERN.test(text);
 }

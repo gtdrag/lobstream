@@ -9,6 +9,18 @@ export function stripHtml(html) {
 }
 
 /**
+ * Check if text is mostly English (Latin characters).
+ * Returns true if >= 70% of letter characters are Latin.
+ */
+export function isMostlyEnglish(text) {
+  if (!text) return false;
+  const letters = text.replace(/[\s\d\p{P}\p{S}]/gu, '');
+  if (letters.length === 0) return false;
+  const latinCount = (letters.match(/[a-zA-Z\u00C0-\u024F]/g) || []).length;
+  return latinCount / letters.length >= 0.7;
+}
+
+/**
  * Normalize a raw message from any source into a consistent format.
  *
  * @param {object} rawMessage - Raw data from a source connector

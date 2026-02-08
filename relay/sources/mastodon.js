@@ -5,7 +5,7 @@
 // Mastodon streaming WebSocket requires auth since v4, so polling is more reliable.
 
 import { addMessage } from '../lib/redis.js';
-import { stripHtml } from '../lib/normalize.js';
+import { stripHtml, isMostlyEnglish } from '../lib/normalize.js';
 
 // ── Configuration ───────────────────────────────────────────────────────────
 
@@ -82,6 +82,7 @@ class MastodonInstance {
           for (const post of posts) {
             const text = stripHtml(post.content || '').trim();
             if (text.length < MIN_TEXT_LENGTH) continue;
+            if (!isMostlyEnglish(text)) continue;
 
             const username = post.account?.username || 'unknown';
             const author = `${username}@${this.host}`;

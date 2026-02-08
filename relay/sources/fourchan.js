@@ -7,6 +7,7 @@
 // No authentication required.
 
 import { addMessage } from '../lib/redis.js';
+import { isMostlyEnglish } from '../lib/normalize.js';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,7 @@ function processPost(post, board, results) {
 
   const text = stripHtml(post.com);
   if (!text || text.length < MIN_TEXT_LENGTH) return;
+  if (!isMostlyEnglish(text)) return;
 
   const author = (post.name || 'Anonymous').trim();
 
