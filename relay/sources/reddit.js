@@ -27,7 +27,7 @@ const SUBREDDITS = [
   'LocalLLM',
   'singularity',
   'StableDiffusion',
-  'ArtificialIntelligence',
+  'Futurology',
 ];
 
 const POLL_INTERVAL_MS = 60_000;    // 1 minute between full cycles
