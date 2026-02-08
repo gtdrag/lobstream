@@ -1,6 +1,6 @@
 const LOBSTER_SVG_PATH = 'assets/lobster.svg';
-const BASE_OPACITY = 0.22;
-const BREATHE_AMPLITUDE = 0.025;
+const BASE_OPACITY = 0.45;
+const BREATHE_AMPLITUDE = 0.05;
 const BREATHE_PERIOD = 9000; // ms
 
 export class Reflection {
@@ -57,19 +57,17 @@ export class Reflection {
     const breathe = Math.sin((elapsed / BREATHE_PERIOD) * Math.PI * 2) * BREATHE_AMPLITUDE;
     const opacity = BASE_OPACITY + breathe;
 
-    // Size the lobster relative to viewport - about 30% of the smaller dimension
-    const size = Math.min(this.width, this.height) * 0.30;
+    // Size the lobster big — 55% of the smaller dimension
+    const size = Math.min(this.width, this.height) * 0.55;
     const aspect = this.image.naturalWidth / this.image.naturalHeight;
     const drawWidth = size * aspect;
     const drawHeight = size;
 
-    // Position: center-bottom, sitting at the waterline (85% of height)
+    // Position: centered
     const x = (this.width - drawWidth) / 2;
-    const waterlineY = this.height * 0.85;
-    const y = waterlineY - drawHeight * 0.3; // Partially below waterline
+    const y = (this.height - drawHeight) / 2;
 
-    // Draw image at full alpha, then colorize it, then composite at desired opacity
-    // Use offscreen canvas to colorize first
+    // Colorize on offscreen canvas
     if (!this._offscreen) {
       this._offscreen = document.createElement('canvas');
       this._offCtx = this._offscreen.getContext('2d');
@@ -82,13 +80,13 @@ export class Reflection {
     off.clearRect(0, 0, drawWidth, drawHeight);
     off.drawImage(this.image, 0, 0, drawWidth, drawHeight);
 
-    // Replace color: fill red using source-atop (keeps shape, replaces color)
+    // Replace color with hot pink-red
     off.globalCompositeOperation = 'source-atop';
-    off.fillStyle = '#cc2244';
+    off.fillStyle = '#e8254a';
     off.fillRect(0, 0, drawWidth, drawHeight);
     off.globalCompositeOperation = 'source-over';
 
-    // Now draw the colorized result onto the main canvas at breathing opacity
+    // Draw colorized result at breathing opacity
     ctx.globalAlpha = opacity;
     ctx.drawImage(this._offscreen, x, y);
     ctx.globalAlpha = 1;
