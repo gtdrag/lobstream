@@ -103,8 +103,36 @@ function wrapTextInShape(ctx, text, shape, maxWidth, lineHeight) {
   return lines;
 }
 
+// Find an X position that's spread away from existing drops
+function spreadX(canvasWidth, existingDrops) {
+  const margin = 60;
+  const range = canvasWidth - 400;
+  if (existingDrops.length === 0) {
+    return margin + Math.random() * range;
+  }
+
+  // Try several candidate positions and pick the one furthest from all others
+  let bestX = margin + Math.random() * range;
+  let bestMinDist = 0;
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const candidateX = margin + Math.random() * range;
+    let minDist = Infinity;
+    for (const drop of existingDrops) {
+      const dist = Math.abs(candidateX - drop.x);
+      if (dist < minDist) minDist = dist;
+    }
+    if (minDist > bestMinDist) {
+      bestMinDist = minDist;
+      bestX = candidateX;
+    }
+  }
+
+  return bestX;
+}
+
 class Drop {
-  constructor(text, canvasWidth, canvasHeight, imageUrl) {
+  constructor(text, canvasWidth, canvasHeight, imageUrl, existingDrops) {
     this.text = text.length > MAX_TEXT_LENGTH
       ? text.slice(0, MAX_TEXT_LENGTH) + '...'
       : text;
@@ -115,7 +143,7 @@ class Drop {
     this.color = pick(COLORS);
     this.shape = pick(SHAPES);
     this.wrapWidth = 180 + Math.random() * 350; // 180-530px
-    this.x = 60 + Math.random() * (canvasWidth - 400);
+    this.x = spreadX(canvasWidth, existingDrops);
     this.y = -30 - Math.random() * 80;
     this.speed = 0.12 + Math.random() * 0.18;
     this.drift = (Math.random() - 0.5) * 0.04;
@@ -194,7 +222,7 @@ export class Rain {
         this.drops.shift();
       }
     }
-    this.drops.push(new Drop(text, this.width, this.height, imageUrl));
+    this.drops.push(new Drop(text, this.width, this.height, imageUrl, this.drops));
   }
 
   start() {
