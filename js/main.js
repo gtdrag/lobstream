@@ -5,6 +5,7 @@ import { Nostr } from './nostr.js';
 import { Wikipedia } from './wikipedia.js';
 import { HackerNews } from './hackernews.js';
 import { BackendStream } from './backend-stream.js';
+import { matchesAICoding } from './topic-filter.js';
 
 // Initialize canvases
 const rainCanvas = document.getElementById('rain-canvas');
@@ -14,14 +15,20 @@ const rain = new Rain(rainCanvas);
 const reflection = new Reflection(reflectionCanvas);
 
 // Shared callback — all sources feed into the same rain
+// Filter browser-native sources for AI coding content
 const addDrop = (text, imageUrl) => rain.addDrop(text, imageUrl);
+const addFilteredDrop = (text, imageUrl) => {
+  if (matchesAICoding(text)) addDrop(text, imageUrl);
+};
 
 // Connect all data sources
-const jetstream = new Jetstream(addDrop);
-const nostr = new Nostr(addDrop);
-const wikipedia = new Wikipedia(addDrop);
-const hackernews = new HackerNews(addDrop);
-const backendStream = new BackendStream(addDrop);
+// Browser-native sources: filtered client-side for AI coding
+const jetstream = new Jetstream(addFilteredDrop);
+const nostr = new Nostr(addFilteredDrop);
+const wikipedia = new Wikipedia(addFilteredDrop);
+const hackernews = new HackerNews(addFilteredDrop);
+// Backend sources: filtered server-side via topics param
+const backendStream = new BackendStream(addDrop, { topics: ['ai', 'openclaw'] });
 
 // Start animation loops
 rain.start();
