@@ -5,6 +5,9 @@ import { start as startAiBatch, stop as stopAiBatch } from './lib/ai-batch.js';
 // Source connectors
 import { startMastodon } from './sources/mastodon.js';
 import { startFourchan } from './sources/fourchan.js';
+import { startReddit } from './sources/reddit.js';
+import { startLobsters } from './sources/lobsters.js';
+import { startGithub } from './sources/github.js';
 
 const sources = [];
 
@@ -29,6 +32,9 @@ async function start() {
   // Start sources
   sources.push(startMastodon());
   sources.push(startFourchan());
+  sources.push(startReddit());
+  sources.push(startLobsters());
+  sources.push(startGithub());
 
   console.log(`Lobstream relay running with ${sources.length} sources`);
 }
