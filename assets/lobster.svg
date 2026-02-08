@@ -1,41 +1,88 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="#c8d0d8">
-  <!-- Lobster silhouette - minimal, ambiguous, could be a lobster or something else -->
-  <!-- Body -->
-  <ellipse cx="200" cy="170" rx="55" ry="30" />
-  <!-- Tail segments -->
-  <ellipse cx="200" cy="210" rx="40" ry="18" />
-  <ellipse cx="200" cy="240" rx="32" ry="14" />
-  <ellipse cx="200" cy="265" rx="24" ry="12" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <!-- Clawdbot-inspired cartoon lobster mascot -->
+
+  <!-- LEFT CLAW (behind body) -->
+  <g>
+    <!-- Arm -->
+    <path d="M130 195 Q100 180 80 160 Q65 145 55 155" stroke="#cc2020" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <!-- Claw -->
+    <path d="M60 140 Q40 120 30 130 Q20 142 35 152 Q25 148 18 158 Q15 170 30 170 Q40 168 55 155 Z" fill="#e83030" stroke="#8b1515" stroke-width="2"/>
+  </g>
+
+  <!-- TAIL -->
+  <ellipse cx="200" cy="320" rx="38" ry="18" fill="#d42828" stroke="#8b1515" stroke-width="2"/>
+  <ellipse cx="200" cy="345" rx="30" ry="14" fill="#cc2020" stroke="#8b1515" stroke-width="2"/>
+  <ellipse cx="200" cy="365" rx="22" ry="11" fill="#c01c1c" stroke="#8b1515" stroke-width="2"/>
   <!-- Tail fan -->
-  <ellipse cx="185" cy="285" rx="18" ry="8" transform="rotate(-15 185 285)" />
-  <ellipse cx="200" cy="288" rx="16" ry="7" />
-  <ellipse cx="215" cy="285" rx="18" ry="8" transform="rotate(15 215 285)" />
-  <!-- Head -->
-  <ellipse cx="200" cy="140" rx="35" ry="22" />
-  <!-- Eyes -->
-  <circle cx="182" cy="128" r="5" />
-  <circle cx="218" cy="128" r="5" />
-  <!-- Antennae -->
-  <line x1="178" y1="125" x2="130" y2="70" stroke="#c8d0d8" stroke-width="2.5" stroke-linecap="round" fill="none" />
-  <line x1="222" y1="125" x2="270" y2="70" stroke="#c8d0d8" stroke-width="2.5" stroke-linecap="round" fill="none" />
-  <!-- Shorter antennae -->
-  <line x1="182" y1="122" x2="150" y2="90" stroke="#c8d0d8" stroke-width="2" stroke-linecap="round" fill="none" />
-  <line x1="218" y1="122" x2="250" y2="90" stroke="#c8d0d8" stroke-width="2" stroke-linecap="round" fill="none" />
-  <!-- Claws - left -->
-  <path d="M145 155 Q120 140 100 145 Q80 150 75 165 Q70 180 85 185 Q100 190 110 178 Q115 170 130 165 Z" />
-  <!-- Claw pincer left -->
-  <path d="M80 155 Q60 140 50 150 Q45 158 55 163 Z" />
-  <path d="M78 170 Q58 178 52 170 Q48 162 58 160 Z" />
-  <!-- Claws - right -->
-  <path d="M255 155 Q280 140 300 145 Q320 150 325 165 Q330 180 315 185 Q300 190 290 178 Q285 170 270 165 Z" />
-  <!-- Claw pincer right -->
-  <path d="M320 155 Q340 140 350 150 Q355 158 345 163 Z" />
-  <path d="M322 170 Q342 178 348 170 Q352 162 342 160 Z" />
-  <!-- Walking legs -->
-  <line x1="165" y1="175" x2="120" y2="210" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
-  <line x1="160" y1="185" x2="115" y2="225" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
-  <line x1="158" y1="195" x2="118" y2="238" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
-  <line x1="235" y1="175" x2="280" y2="210" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
-  <line x1="240" y1="185" x2="285" y2="225" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
-  <line x1="242" y1="195" x2="282" y2="238" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+  <ellipse cx="182" cy="382" rx="18" ry="9" transform="rotate(-20 182 382)" fill="#d42828" stroke="#8b1515" stroke-width="1.5"/>
+  <ellipse cx="200" cy="386" rx="16" ry="8" fill="#d42828" stroke="#8b1515" stroke-width="1.5"/>
+  <ellipse cx="218" cy="382" rx="18" ry="9" transform="rotate(20 218 382)" fill="#d42828" stroke="#8b1515" stroke-width="1.5"/>
+
+  <!-- BODY segments -->
+  <ellipse cx="200" cy="280" rx="52" ry="22" fill="#d42828" stroke="#8b1515" stroke-width="2"/>
+  <ellipse cx="200" cy="255" rx="56" ry="22" fill="#db3030" stroke="#8b1515" stroke-width="2"/>
+  <ellipse cx="200" cy="230" rx="60" ry="24" fill="#e03434" stroke="#8b1515" stroke-width="2"/>
+
+  <!-- MAIN BODY / CARAPACE -->
+  <ellipse cx="200" cy="185" rx="72" ry="60" fill="#e83838" stroke="#8b1515" stroke-width="2.5"/>
+  <!-- Body highlight -->
+  <ellipse cx="188" cy="168" rx="30" ry="20" fill="#f04848" opacity="0.5"/>
+
+  <!-- HEAD -->
+  <ellipse cx="200" cy="120" rx="55" ry="45" fill="#ee3a3a" stroke="#8b1515" stroke-width="2.5"/>
+  <!-- Head highlight -->
+  <ellipse cx="190" cy="108" rx="22" ry="16" fill="#f55050" opacity="0.4"/>
+
+  <!-- ANTENNAE -->
+  <path d="M172 85 Q155 50 140 25" stroke="#cc2020" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M228 85 Q245 50 260 25" stroke="#cc2020" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- Shorter inner antennae -->
+  <path d="M180 82 Q170 60 162 45" stroke="#cc2020" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M220 82 Q230 60 238 45" stroke="#cc2020" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- EYES -->
+  <!-- Eye whites -->
+  <ellipse cx="178" cy="110" rx="16" ry="18" fill="#fff" stroke="#8b1515" stroke-width="2"/>
+  <ellipse cx="222" cy="110" rx="16" ry="18" fill="#fff" stroke="#8b1515" stroke-width="2"/>
+  <!-- Pupils (looking slightly to the side for personality) -->
+  <ellipse cx="181" cy="112" rx="8" ry="10" fill="#1a1a2e"/>
+  <ellipse cx="225" cy="112" rx="8" ry="10" fill="#1a1a2e"/>
+  <!-- Eye shine -->
+  <circle cx="184" cy="107" r="3.5" fill="#fff"/>
+  <circle cx="228" cy="107" r="3.5" fill="#fff"/>
+  <!-- Eyebrows (slightly angled for attitude) -->
+  <path d="M164 94 Q175 88 192 92" stroke="#8b1515" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M236 94 Q225 88 208 92" stroke="#8b1515" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+  <!-- SMIRK -->
+  <path d="M185 138 Q200 150 220 140" stroke="#8b1515" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Little smirk uptick -->
+  <path d="M220 140 Q224 137 226 134" stroke="#8b1515" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- RIGHT CLAW (in front, raised up — the "open claw") -->
+  <g>
+    <!-- Arm -->
+    <path d="M270 195 Q305 170 320 140 Q330 120 340 115" stroke="#cc2020" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <!-- Upper pincer -->
+    <path d="M335 115 Q345 90 365 80 Q380 75 385 88 Q388 100 375 108 Q365 112 345 115 Z" fill="#e83030" stroke="#8b1515" stroke-width="2"/>
+    <!-- Lower pincer -->
+    <path d="M335 115 Q350 125 365 122 Q380 118 378 108 Q375 100 365 108 Q355 115 345 115 Z" fill="#e83030" stroke="#8b1515" stroke-width="2"/>
+    <!-- Claw highlight -->
+    <path d="M350 90 Q360 85 368 88" stroke="#f55050" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+  </g>
+
+  <!-- WALKING LEGS -->
+  <g stroke="#cc2020" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M145 215 Q120 235 105 255"/>
+    <path d="M140 235 Q115 258 100 278"/>
+    <path d="M255 215 Q280 235 295 255"/>
+    <path d="M260 235 Q285 258 300 278"/>
+  </g>
+  <!-- Leg tips -->
+  <g fill="#b81c1c">
+    <circle cx="105" cy="255" r="4"/>
+    <circle cx="100" cy="278" r="4"/>
+    <circle cx="295" cy="255" r="4"/>
+    <circle cx="300" cy="278" r="4"/>
+  </g>
 </svg>

@@ -1,5 +1,5 @@
 const LOBSTER_SVG_PATH = 'assets/lobster.svg';
-const BASE_OPACITY = 0.45;
+const BASE_OPACITY = 0.50;
 const BREATHE_AMPLITUDE = 0.05;
 const BREATHE_PERIOD = 9000; // ms
 
@@ -67,28 +67,9 @@ export class Reflection {
     const x = (this.width - drawWidth) / 2;
     const y = (this.height - drawHeight) / 2;
 
-    // Colorize on offscreen canvas
-    if (!this._offscreen) {
-      this._offscreen = document.createElement('canvas');
-      this._offCtx = this._offscreen.getContext('2d');
-    }
-    this._offscreen.width = drawWidth;
-    this._offscreen.height = drawHeight;
-    const off = this._offCtx;
-
-    // Draw the SVG at full opacity
-    off.clearRect(0, 0, drawWidth, drawHeight);
-    off.drawImage(this.image, 0, 0, drawWidth, drawHeight);
-
-    // Replace color with hot pink-red
-    off.globalCompositeOperation = 'source-atop';
-    off.fillStyle = '#e8254a';
-    off.fillRect(0, 0, drawWidth, drawHeight);
-    off.globalCompositeOperation = 'source-over';
-
-    // Draw colorized result at breathing opacity
+    // Draw the mascot at breathing opacity (preserve original SVG colors)
     ctx.globalAlpha = opacity;
-    ctx.drawImage(this._offscreen, x, y);
+    ctx.drawImage(this.image, x, y, drawWidth, drawHeight);
     ctx.globalAlpha = 1;
   }
 
