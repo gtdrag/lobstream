@@ -1,6 +1,9 @@
 import { Rain } from './rain.js';
 import { Reflection } from './reflection.js';
 import { Jetstream } from './jetstream.js';
+import { Nostr } from './nostr.js';
+import { Wikipedia } from './wikipedia.js';
+import { HackerNews } from './hackernews.js';
 
 // Initialize canvases
 const rainCanvas = document.getElementById('rain-canvas');
@@ -9,15 +12,24 @@ const reflectionCanvas = document.getElementById('reflection-canvas');
 const rain = new Rain(rainCanvas);
 const reflection = new Reflection(reflectionCanvas);
 
-// Connect to Bluesky Jetstream
-const jetstream = new Jetstream((text) => {
-  rain.addDrop(text);
-});
+// Shared callback — all sources feed into the same rain
+const addDrop = (text) => rain.addDrop(text);
+
+// Connect all data sources
+const jetstream = new Jetstream(addDrop);
+const nostr = new Nostr(addDrop);
+const wikipedia = new Wikipedia(addDrop);
+const hackernews = new HackerNews(addDrop);
 
 // Start animation loops
 rain.start();
 reflection.start();
+
+// Connect all sources
 jetstream.connect();
+nostr.connect();
+wikipedia.connect();
+hackernews.connect();
 
 // Handle resize
 let resizeTimeout;
