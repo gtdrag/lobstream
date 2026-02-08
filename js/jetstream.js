@@ -1,6 +1,6 @@
 const JETSTREAM_URL = 'wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post';
 const MAX_QUEUE_SIZE = 200;
-const FEED_RATE_MS = 150; // ~6-7 new drops per second
+const FEED_RATE_MS = 350; // ~3 new drops per second
 
 export class Jetstream {
   constructor(onPost) {

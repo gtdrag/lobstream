@@ -11,7 +11,7 @@ class Drop {
       : text;
     this.fontSize = 11 + Math.random() * 3; // 11-14px
     this.x = Math.random() * (canvasWidth - 200) + 20;
-    this.y = -20 - Math.random() * 60;
+    this.y = -20 - Math.random() * 300;
     this.speed = 0.06 + Math.random() * 0.14;
     this.drift = (Math.random() - 0.5) * 0.08;
     this.baseOpacity = 0.5 + Math.random() * 0.3;
