@@ -1,6 +1,6 @@
 const LOBSTER_SVG_PATH = 'assets/lobster.svg';
-const BASE_OPACITY = 0.045;
-const BREATHE_AMPLITUDE = 0.01;
+const BASE_OPACITY = 0.22;
+const BREATHE_AMPLITUDE = 0.025;
 const BREATHE_PERIOD = 9000; // ms
 
 export class Reflection {
@@ -68,19 +68,29 @@ export class Reflection {
     const waterlineY = this.height * 0.85;
     const y = waterlineY - drawHeight * 0.3; // Partially below waterline
 
+    // Draw image at full alpha, then colorize it, then composite at desired opacity
+    // Use offscreen canvas to colorize first
+    if (!this._offscreen) {
+      this._offscreen = document.createElement('canvas');
+      this._offCtx = this._offscreen.getContext('2d');
+    }
+    this._offscreen.width = drawWidth;
+    this._offscreen.height = drawHeight;
+    const off = this._offCtx;
+
+    // Draw the SVG at full opacity
+    off.clearRect(0, 0, drawWidth, drawHeight);
+    off.drawImage(this.image, 0, 0, drawWidth, drawHeight);
+
+    // Replace color: fill red using source-atop (keeps shape, replaces color)
+    off.globalCompositeOperation = 'source-atop';
+    off.fillStyle = '#cc2244';
+    off.fillRect(0, 0, drawWidth, drawHeight);
+    off.globalCompositeOperation = 'source-over';
+
+    // Now draw the colorized result onto the main canvas at breathing opacity
     ctx.globalAlpha = opacity;
-
-    // Apply a subtle red/blue color tint by drawing with composite operations
-    // First draw the base image
-    ctx.drawImage(this.image, x, y, drawWidth, drawHeight);
-
-    // Overlay a very faint red-blue tint
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillStyle = 'rgba(160, 80, 100, 0.15)';
-    ctx.fillRect(x, y, drawWidth, drawHeight);
-
-    // Reset
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(this._offscreen, x, y);
     ctx.globalAlpha = 1;
   }
 
