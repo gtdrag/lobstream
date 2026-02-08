@@ -10,12 +10,14 @@ import { stripHtml, isMostlyEnglish } from '../lib/normalize.js';
 // ── Configuration ───────────────────────────────────────────────────────────
 
 const INSTANCES = [
-  'fosstodon.org',      // FOSS / tech
-  'hachyderm.io',       // tech-focused
-  'mas.to',            // general
-  'mstdn.social',      // general
-  'techhub.social',    // tech community
-  'social.vivaldi.net', // general / international
+  'fosstodon.org',       // FOSS / tech
+  'hachyderm.io',        // tech-focused
+  'mas.to',              // general
+  'mastodon.social',     // flagship — largest, diverse
+  'mastodon.online',     // official general instance
+  'kolektiva.social',    // leftist / activist / anarchist
+  'universeodon.com',    // large general, progressive-leaning
+  'mstdn.social',        // general
 ];
 
 const POLL_INTERVAL_MS = 15_000;  // poll each instance every 15 seconds
