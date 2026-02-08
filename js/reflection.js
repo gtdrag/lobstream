@@ -6,8 +6,8 @@ const BREATHE_PERIOD = 9000; // ms
 // Eye positions in SVG coordinate space (viewBox 0 0 400 400)
 const LEFT_EYE = { cx: 178, cy: 110 };
 const RIGHT_EYE = { cx: 222, cy: 110 };
-const PUPIL_RX = 8;
-const PUPIL_RY = 10;
+const PUPIL_RX = 11;
+const PUPIL_RY = 13;
 const SHINE_R = 3.5;
 const EYE_WANDER = 5; // max pixels the pupil drifts from center (in SVG coords)
 
@@ -147,7 +147,7 @@ export class Reflection {
       const pos = this._svgToCanvas(eye.cx, eye.cy, x, y, drawWidth, drawHeight);
 
       // Pupil
-      ctx.fillStyle = '#1a1a2e';
+      ctx.fillStyle = '#0a0a18';
       ctx.beginPath();
       ctx.ellipse(pos.x + gazeOffX, pos.y + gazeOffY, pRx, pRy, 0, 0, Math.PI * 2);
       ctx.fill();
