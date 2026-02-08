@@ -1,4 +1,4 @@
-const MAX_DROPS = 4;
+const MAX_DROPS = 12;
 const MAX_TEXT_LENGTH = 300;
 const IMG_MAX_SIZE = 150;
 

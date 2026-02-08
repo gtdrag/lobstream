@@ -5,7 +5,7 @@ const RELAYS = [
 ];
 const SUB_ID = 'lobstream';
 const MAX_QUEUE_SIZE = 200;
-const FEED_RATE_MS = 8000;
+const FEED_RATE_MS = 4000;
 
 export class Nostr {
   constructor(onPost) {
