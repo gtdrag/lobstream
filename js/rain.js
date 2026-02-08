@@ -1,6 +1,6 @@
 const MAX_DROPS = 20;
 const MAX_TEXT_LENGTH = 300;
-const IMG_MAX_SIZE = 150;
+const IMG_MAX_SIZE = 280;
 
 const FONTS = [
   'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace',
@@ -212,8 +212,10 @@ class Drop {
       img.style.maxWidth = IMG_MAX_SIZE + 'px';
       img.style.maxHeight = IMG_MAX_SIZE + 'px';
       img.style.display = 'block';
-      img.style.marginBottom = '8px';
-      img.style.borderRadius = '4px';
+      img.style.marginBottom = '10px';
+      img.style.borderRadius = '8px';
+      img.style.boxShadow = '0 0 20px rgba(255,255,255,0.08)';
+      img.style.border = '1px solid rgba(255,255,255,0.1)';
       img.onerror = () => img.remove();
       this.el.appendChild(img);
     }

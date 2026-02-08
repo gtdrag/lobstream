@@ -100,7 +100,11 @@ class MastodonInstance {
               }
             }
 
-            const msg = { source: 'mastodon', text, author, topics, confidence };
+            // Extract first image attachment if available
+            const mediaUrl = (post.media_attachments || [])
+              .find(a => a.type === 'image')?.preview_url || null;
+
+            const msg = { source: 'mastodon', text, author, topics, confidence, imageUrl: mediaUrl };
             // Posts with keyword matches go through AI scoring; others go direct
             if (topics.length > 0) {
               aiEnqueue(msg);

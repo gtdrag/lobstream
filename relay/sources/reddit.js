@@ -116,7 +116,19 @@ async function pollSubreddit(subreddit) {
     if (!isMostlyEnglish(text)) continue;
 
     const author = post.author || 'anonymous';
-    posts.push({ text, author: `u/${author}`, subreddit });
+
+    // Extract image URL from Reddit post
+    let imageUrl = null;
+    const preview = post.preview?.images?.[0]?.source?.url;
+    if (preview) {
+      imageUrl = preview.replace(/&amp;/g, '&');
+    } else if (post.url && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(post.url)) {
+      imageUrl = post.url;
+    } else if (post.thumbnail && post.thumbnail.startsWith('http')) {
+      imageUrl = post.thumbnail;
+    }
+
+    posts.push({ text, author: `u/${author}`, subreddit, imageUrl });
   }
 
   return posts;
@@ -149,6 +161,7 @@ async function pollCycle() {
           author: post.author,
           topics,
           confidence,
+          imageUrl: post.imageUrl,
         };
 
         if (topics.length > 0 && aiEnqueue) {

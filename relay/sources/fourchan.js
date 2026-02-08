@@ -154,7 +154,10 @@ function processPost(post, board, results) {
 
   const author = (post.name || 'Anonymous').trim();
 
-  results.push({ text, author, board, no: post.no });
+  // Extract thumbnail if post has an image
+  const imageUrl = post.tim ? `https://i.4cdn.org/${board}/${post.tim}s.jpg` : null;
+
+  results.push({ text, author, board, no: post.no, imageUrl });
 }
 
 // ── Poll cycle ──────────────────────────────────────────────────────────────
@@ -185,6 +188,7 @@ async function pollCycle() {
           author: `${post.author} /${post.board}/`,
           topics,
           confidence,
+          imageUrl: post.imageUrl,
         };
         // Posts with keyword matches go through AI scoring; others go direct
         if (topics.length > 0) {

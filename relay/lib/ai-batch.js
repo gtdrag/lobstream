@@ -230,6 +230,7 @@ async function pushEnriched(post, relevance, sentiment, aiTier) {
     relevance: relevance != null ? relevance : '',
     sentiment: sentiment || '',
     ai_tier: aiTier,
+    imageUrl: post.imageUrl || null,
   });
 }
 
