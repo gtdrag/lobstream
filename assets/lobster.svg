@@ -44,12 +44,7 @@
   <!-- Eye whites -->
   <ellipse cx="178" cy="110" rx="16" ry="18" fill="#fff" stroke="#8b1515" stroke-width="2"/>
   <ellipse cx="222" cy="110" rx="16" ry="18" fill="#fff" stroke="#8b1515" stroke-width="2"/>
-  <!-- Pupils (looking slightly to the side for personality) -->
-  <ellipse cx="181" cy="112" rx="8" ry="10" fill="#1a1a2e"/>
-  <ellipse cx="225" cy="112" rx="8" ry="10" fill="#1a1a2e"/>
-  <!-- Eye shine -->
-  <circle cx="184" cy="107" r="3.5" fill="#fff"/>
-  <circle cx="228" cy="107" r="3.5" fill="#fff"/>
+  <!-- Pupils and eye shine drawn programmatically in reflection.js for animation -->
   <!-- Eyebrows (slightly angled for attitude) -->
   <path d="M164 94 Q175 88 192 92" stroke="#8b1515" stroke-width="3" stroke-linecap="round" fill="none"/>
   <path d="M236 94 Q225 88 208 92" stroke="#8b1515" stroke-width="3" stroke-linecap="round" fill="none"/>
