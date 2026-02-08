@@ -11,14 +11,14 @@ const FONTS = [
 ];
 
 const COLORS = [
-  [200, 210, 220],  // cool white
-  [180, 200, 230],  // pale blue
-  [220, 190, 180],  // warm blush
-  [190, 220, 200],  // soft mint
-  [230, 220, 180],  // pale gold
-  [210, 185, 220],  // soft lavender
-  [220, 200, 200],  // dusty rose
-  [185, 215, 215],  // sea glass
+  'rgb(200, 210, 220)',  // cool white
+  'rgb(180, 200, 230)',  // pale blue
+  'rgb(220, 190, 180)',  // warm blush
+  'rgb(190, 220, 200)',  // soft mint
+  'rgb(230, 220, 180)',  // pale gold
+  'rgb(210, 185, 220)',  // soft lavender
+  'rgb(220, 200, 200)',  // dusty rose
+  'rgb(185, 215, 215)',  // sea glass
 ];
 
 const SHAPES = ['rect', 'circle', 'diamond', 'oval'];
@@ -29,22 +29,35 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// URL pattern for auto-linking
+const URL_REGEX = /(https?:\/\/[^\s<>"')\]]+)/g;
+
+function autoLink(text) {
+  return text.replace(URL_REGEX, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+}
+
+// Escape HTML except for our auto-linked <a> tags
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Get the available text width at a given row within a shape
 function shapeWidthAt(shape, row, totalRows, maxWidth) {
-  const t = totalRows <= 1 ? 0.5 : row / (totalRows - 1); // 0 to 1
+  const t = totalRows <= 1 ? 0.5 : row / (totalRows - 1);
   switch (shape) {
     case 'circle': {
-      // Circle: width varies by sin
       const r = Math.sin(t * Math.PI);
       return maxWidth * Math.max(r, 0.15);
     }
     case 'diamond': {
-      // Diamond: widest in middle, tapers to points
       const d = 1 - Math.abs(2 * t - 1);
       return maxWidth * Math.max(d, 0.15);
     }
     case 'oval': {
-      // Oval: like circle but wider
       const o = Math.sin(t * Math.PI);
       return maxWidth * Math.max(o * 0.7 + 0.3, 0.2);
     }
@@ -54,17 +67,17 @@ function shapeWidthAt(shape, row, totalRows, maxWidth) {
   }
 }
 
-// Word-wrap text into lines constrained by a shape
-function wrapTextInShape(ctx, text, shape, maxWidth, lineHeight) {
+// Word-wrap text into lines constrained by a shape, using a measuring canvas
+function wrapTextInShape(measureCtx, text, shape, maxWidth, fontSize) {
   const words = text.split(/\s+/).filter(w => w.length > 0);
   if (words.length === 0) return [];
 
-  // First pass: estimate how many lines we need with simple rect wrap
+  // First pass: estimate line count with simple rect wrap
   const estimatedLines = [];
   let currentLine = '';
   for (const word of words) {
     const testLine = currentLine ? currentLine + ' ' + word : word;
-    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+    if (measureCtx.measureText(testLine).width > maxWidth && currentLine) {
       estimatedLines.push(currentLine);
       currentLine = word;
     } else {
@@ -87,7 +100,7 @@ function wrapTextInShape(ctx, text, shape, maxWidth, lineHeight) {
     while (wordIdx < words.length) {
       const word = words[wordIdx];
       const testLine = line ? line + ' ' + word : word;
-      if (ctx.measureText(testLine).width > rowWidth && line) {
+      if (measureCtx.measureText(testLine).width > rowWidth && line) {
         break;
       }
       line = testLine;
@@ -103,15 +116,15 @@ function wrapTextInShape(ctx, text, shape, maxWidth, lineHeight) {
   return lines;
 }
 
-// Find an X position that's spread away from existing drops
-function spreadX(canvasWidth, existingDrops) {
+// Find an X position spread away from existing drops
+function spreadX(containerWidth, existingDrops) {
   const margin = 60;
-  const range = canvasWidth - 400;
+  const range = containerWidth - 400;
+  if (range <= 0) return margin;
   if (existingDrops.length === 0) {
     return margin + Math.random() * range;
   }
 
-  // Try several candidate positions and pick the one furthest from all others
   let bestX = margin + Math.random() * range;
   let bestMinDist = 0;
 
@@ -131,57 +144,88 @@ function spreadX(canvasWidth, existingDrops) {
   return bestX;
 }
 
+// Offscreen canvas for text measurement
+const _measureCanvas = document.createElement('canvas');
+const _measureCtx = _measureCanvas.getContext('2d');
+
 class Drop {
-  constructor(text, canvasWidth, canvasHeight, imageUrl, existingDrops) {
+  constructor(text, containerWidth, containerHeight, imageUrl, existingDrops) {
     this.text = text.length > MAX_TEXT_LENGTH
       ? text.slice(0, MAX_TEXT_LENGTH) + '...'
       : text;
-    this.fontSize = 18 + Math.random() * 34; // 18-52px
+    this.fontSize = 18 + Math.random() * 34;
     this.font = pick(FONTS);
     this.fontStyle = pick(STYLES);
     this.fontWeight = pick(WEIGHTS);
     this.color = pick(COLORS);
     this.shape = pick(SHAPES);
-    this.wrapWidth = 180 + Math.random() * 350; // 180-530px
-    this.x = spreadX(canvasWidth, existingDrops);
-    this.y = canvasHeight + 30 + Math.random() * 80;
+    this.wrapWidth = 180 + Math.random() * 350;
+    this.x = spreadX(containerWidth, existingDrops);
+    this.y = containerHeight + 30 + Math.random() * 80;
     this.speed = 0.18 + Math.random() * 0.22;
     this.drift = (Math.random() - 0.5) * 0.04;
     this.baseOpacity = 0.7 + Math.random() * 0.25;
     this.opacity = this.baseOpacity;
     this.alive = true;
-    this.wrappedLines = null; // computed lazily on first draw
+    this.imageUrl = imageUrl || null;
+    this.containerHeight = containerHeight;
 
-    // Image support
-    this.image = null;
-    this.imageLoaded = false;
-    this.imageWidth = 0;
-    this.imageHeight = 0;
-    if (imageUrl) {
-      const img = new Image();
+    // Build DOM element
+    this.el = document.createElement('div');
+    this.el.className = 'drop';
+    this.el.style.position = 'absolute';
+    this.el.style.left = this.x + 'px';
+    this.el.style.top = '0px';
+    this.el.style.transform = `translateY(${this.y}px)`;
+    this.el.style.opacity = this.opacity;
+    this.el.style.pointerEvents = 'auto';
+    this.el.style.maxWidth = this.wrapWidth + 'px';
+    this.el.style.willChange = 'transform, opacity';
+
+    // Image
+    if (this.imageUrl) {
+      const img = document.createElement('img');
+      img.src = this.imageUrl;
       img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        this.imageLoaded = true;
-        const aspect = img.naturalWidth / img.naturalHeight;
-        if (aspect >= 1) {
-          this.imageWidth = IMG_MAX_SIZE;
-          this.imageHeight = IMG_MAX_SIZE / aspect;
-        } else {
-          this.imageHeight = IMG_MAX_SIZE;
-          this.imageWidth = IMG_MAX_SIZE * aspect;
-        }
-      };
-      img.onerror = () => {};
-      img.src = imageUrl;
-      this.image = img;
+      img.style.maxWidth = IMG_MAX_SIZE + 'px';
+      img.style.maxHeight = IMG_MAX_SIZE + 'px';
+      img.style.display = 'block';
+      img.style.marginBottom = '8px';
+      img.style.borderRadius = '4px';
+      img.onerror = () => img.remove();
+      this.el.appendChild(img);
+    }
+
+    // Shaped text lines
+    if (this.text) {
+      const fontStr = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.font}`;
+      _measureCtx.font = fontStr;
+      const lines = wrapTextInShape(_measureCtx, this.text, this.shape, this.wrapWidth, this.fontSize);
+
+      for (const line of lines) {
+        const lineEl = document.createElement('div');
+        lineEl.style.fontFamily = this.font;
+        lineEl.style.fontSize = this.fontSize + 'px';
+        lineEl.style.fontStyle = this.fontStyle;
+        lineEl.style.fontWeight = this.fontWeight;
+        lineEl.style.color = this.color;
+        lineEl.style.lineHeight = '1.3';
+        lineEl.style.textAlign = 'center';
+        lineEl.style.maxWidth = line.maxWidth + 'px';
+        lineEl.style.margin = '0 auto';
+        lineEl.style.wordBreak = 'break-word';
+        // Escape HTML then auto-link URLs
+        lineEl.innerHTML = autoLink(escapeHtml(line.text));
+        this.el.appendChild(lineEl);
+      }
     }
   }
 
-  update(canvasHeight) {
-    this.y -= this.speed; // rise upward
+  update() {
+    this.y -= this.speed;
     this.x += this.drift;
 
-    const normalizedY = this.y / canvasHeight;
+    const normalizedY = this.y / this.containerHeight;
     if (normalizedY < 0.10) {
       const fadeProgress = (0.10 - normalizedY) / 0.10;
       this.opacity = this.baseOpacity * (1 - fadeProgress);
@@ -189,26 +233,33 @@ class Drop {
       this.opacity = this.baseOpacity;
     }
 
-    if (this.opacity <= 0.01 || this.y < -20) {
+    if (this.opacity <= 0.01 || this.y < -200) {
       this.alive = false;
+    }
+
+    // Update DOM
+    this.el.style.transform = `translateY(${this.y}px)`;
+    this.el.style.left = this.x + 'px';
+    this.el.style.opacity = this.opacity;
+  }
+
+  remove() {
+    if (this.el.parentNode) {
+      this.el.parentNode.removeChild(this.el);
     }
   }
 }
 
 export class Rain {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+  constructor(container) {
+    this.container = container;
     this.drops = [];
     this.animationId = null;
-    this.resize();
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
   }
 
   resize() {
-    const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = window.innerWidth * dpr;
-    this.canvas.height = window.innerHeight * dpr;
-    this.ctx.scale(dpr, dpr);
     this.width = window.innerWidth;
     this.height = window.innerHeight;
   }
@@ -217,18 +268,21 @@ export class Rain {
     if (this.drops.length >= MAX_DROPS) {
       const deadIndex = this.drops.findIndex(d => !d.alive);
       if (deadIndex !== -1) {
+        this.drops[deadIndex].remove();
         this.drops.splice(deadIndex, 1);
       } else {
+        this.drops[0].remove();
         this.drops.shift();
       }
     }
-    this.drops.push(new Drop(text, this.width, this.height, imageUrl, this.drops));
+    const drop = new Drop(text, this.width, this.height, imageUrl, this.drops);
+    this.container.appendChild(drop.el);
+    this.drops.push(drop);
   }
 
   start() {
     const loop = () => {
       this.update();
-      this.draw();
       this.animationId = requestAnimationFrame(loop);
     };
     this.animationId = requestAnimationFrame(loop);
@@ -243,58 +297,17 @@ export class Rain {
 
   update() {
     for (let i = this.drops.length - 1; i >= 0; i--) {
-      this.drops[i].update(this.height);
+      this.drops[i].update();
       if (!this.drops[i].alive) {
+        this.drops[i].remove();
         this.drops.splice(i, 1);
-      }
-    }
-  }
-
-  draw() {
-    const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.width, this.height);
-
-    ctx.textBaseline = 'top';
-    for (const drop of this.drops) {
-      if (drop.opacity <= 0) continue;
-      const [r, g, b] = drop.color;
-      const fontStr = `${drop.fontStyle} ${drop.fontWeight} ${drop.fontSize}px ${drop.font}`;
-      ctx.font = fontStr;
-
-      let textY = drop.y;
-
-      // Draw image if available
-      if (drop.imageLoaded && drop.image) {
-        ctx.globalAlpha = drop.opacity;
-        ctx.drawImage(drop.image, drop.x, drop.y, drop.imageWidth, drop.imageHeight);
-        ctx.globalAlpha = 1;
-        textY = drop.y + drop.imageHeight + 10;
-      }
-
-      if (!drop.text) continue;
-
-      // Lazy-compute wrapped lines
-      if (!drop.wrappedLines) {
-        ctx.font = fontStr;
-        drop.wrappedLines = wrapTextInShape(ctx, drop.text, drop.shape, drop.wrapWidth, drop.fontSize * 1.3);
-      }
-
-      const lineHeight = drop.fontSize * 1.3;
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${drop.opacity})`;
-
-      for (let i = 0; i < drop.wrappedLines.length; i++) {
-        const line = drop.wrappedLines[i];
-        // Center each line within the shape width
-        const lineWidth = ctx.measureText(line.text).width;
-        const offsetX = (line.maxWidth - lineWidth) / 2;
-        const centerOffset = (drop.wrapWidth - line.maxWidth) / 2;
-        ctx.fillText(line.text, drop.x + centerOffset + offsetX, textY + i * lineHeight);
       }
     }
   }
 
   destroy() {
     this.stop();
+    for (const drop of this.drops) drop.remove();
     this.drops = [];
   }
 }

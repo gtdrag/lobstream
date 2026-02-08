@@ -7,11 +7,11 @@ import { HackerNews } from './hackernews.js';
 import { BackendStream } from './backend-stream.js';
 import { matchesAICoding } from './topic-filter.js';
 
-// Initialize canvases
-const rainCanvas = document.getElementById('rain-canvas');
+// Initialize
+const dropContainer = document.getElementById('drop-container');
 const reflectionCanvas = document.getElementById('reflection-canvas');
 
-const rain = new Rain(rainCanvas);
+const rain = new Rain(dropContainer);
 const reflection = new Reflection(reflectionCanvas);
 
 // Shared callback — all sources feed into the same rain
