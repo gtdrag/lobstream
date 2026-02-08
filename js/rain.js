@@ -144,7 +144,7 @@ class Drop {
     this.shape = pick(SHAPES);
     this.wrapWidth = 180 + Math.random() * 350; // 180-530px
     this.x = spreadX(canvasWidth, existingDrops);
-    this.y = -30 - Math.random() * 80;
+    this.y = canvasHeight + 30 + Math.random() * 80;
     this.speed = 0.18 + Math.random() * 0.22;
     this.drift = (Math.random() - 0.5) * 0.04;
     this.baseOpacity = 0.7 + Math.random() * 0.25;
@@ -178,18 +178,18 @@ class Drop {
   }
 
   update(canvasHeight) {
-    this.y += this.speed;
+    this.y -= this.speed; // rise upward
     this.x += this.drift;
 
     const normalizedY = this.y / canvasHeight;
-    if (normalizedY > 0.90) {
-      const fadeProgress = (normalizedY - 0.90) / 0.10;
+    if (normalizedY < 0.10) {
+      const fadeProgress = (0.10 - normalizedY) / 0.10;
       this.opacity = this.baseOpacity * (1 - fadeProgress);
     } else {
       this.opacity = this.baseOpacity;
     }
 
-    if (this.opacity <= 0.01 || this.y > canvasHeight + 20) {
+    if (this.opacity <= 0.01 || this.y < -20) {
       this.alive = false;
     }
   }
