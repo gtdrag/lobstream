@@ -4,6 +4,7 @@ import { Jetstream } from './jetstream.js';
 import { Nostr } from './nostr.js';
 import { Wikipedia } from './wikipedia.js';
 import { HackerNews } from './hackernews.js';
+import { BackendStream } from './backend-stream.js';
 
 // Initialize canvases
 const rainCanvas = document.getElementById('rain-canvas');
@@ -20,6 +21,7 @@ const jetstream = new Jetstream(addDrop);
 const nostr = new Nostr(addDrop);
 const wikipedia = new Wikipedia(addDrop);
 const hackernews = new HackerNews(addDrop);
+const backendStream = new BackendStream(addDrop);
 
 // Start animation loops
 rain.start();
@@ -30,6 +32,7 @@ jetstream.connect();
 nostr.connect();
 wikipedia.connect();
 hackernews.connect();
+backendStream.connect();
 
 // Handle resize
 let resizeTimeout;
