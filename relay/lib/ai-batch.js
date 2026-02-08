@@ -9,7 +9,7 @@ import { addMessage } from './redis.js';
 // ── Configuration ───────────────────────────────────────────────────────────
 
 const BATCH_SIZE = 15;
-const FLUSH_INTERVAL_MS = 8_000;
+const FLUSH_INTERVAL_MS = 30_000;
 const RELEVANCE_THRESHOLD = 0.4;
 const MODEL = 'claude-haiku-4-5-20251001';
 

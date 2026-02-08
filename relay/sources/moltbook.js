@@ -59,15 +59,11 @@ const BASE_URL = 'https://www.moltbook.com/api/v1';
 const SUBMOLTS = [
   'consciousness',
   'blesstheirhearts',
-  'shitposts',
   'offmychest',
-  'aita',
-  'TheClaw',
-  'Crustafarianism',
 ];
 
-const NEW_POLL_MS    = 45_000;   // poll /new every 45 seconds
-const HOT_POLL_MS    = 120_000;  // poll /hot every 2 minutes
+const NEW_POLL_MS    = 300_000;  // poll /new every 5 minutes
+const HOT_POLL_MS    = 900_000;  // poll /hot every 15 minutes
 const REQUEST_DELAY  = 1_000;    // 1s between sequential requests
 const MIN_TEXT_LEN   = 10;
 const MAX_TEXT_LEN   = 2000;

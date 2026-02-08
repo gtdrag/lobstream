@@ -17,7 +17,7 @@ export default async function handler(req) {
   const encoder = new TextEncoder();
   let lastId = after;
   const startTime = Date.now();
-  const MAX_DURATION = 25000;
+  const MAX_DURATION = 55000;
   let lastHeartbeat = Date.now();
   const isFreshConnection = !lastEventId && after === '0-0';
 
@@ -167,7 +167,7 @@ export default async function handler(req) {
         }
 
         if (!closed && Date.now() - startTime < MAX_DURATION) {
-          setTimeout(poll, 8000);
+          setTimeout(poll, 30000);
         } else {
           close();
         }

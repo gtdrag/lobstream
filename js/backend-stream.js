@@ -1,4 +1,4 @@
-const FEED_RATE_MS = 4000;
+const FEED_RATE_MS = 8000;
 const MAX_QUEUE_SIZE = 200;
 const BACKFILL_FLUSH_DELAY = 300; // ms after connect to flush initial batch
 
