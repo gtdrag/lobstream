@@ -100,12 +100,12 @@ class MastodonInstance {
               }
             }
 
-            const post = { source: 'mastodon', text, author, topics, confidence };
+            const msg = { source: 'mastodon', text, author, topics, confidence };
             // Posts with keyword matches go through AI scoring; others go direct
             if (topics.length > 0) {
-              aiEnqueue(post);
+              aiEnqueue(msg);
             } else {
-              await addMessage(post);
+              await addMessage(msg);
             }
             count++;
           }
