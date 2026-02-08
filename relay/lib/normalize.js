@@ -1,4 +1,4 @@
-const MAX_TEXT_LENGTH = 500;
+const MAX_TEXT_LENGTH = 2000;
 
 /**
  * Strip HTML tags from a string.

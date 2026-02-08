@@ -39,7 +39,7 @@ const NEW_POLL_MS    = 45_000;   // poll /new every 45 seconds
 const HOT_POLL_MS    = 120_000;  // poll /hot every 2 minutes
 const REQUEST_DELAY  = 1_000;    // 1s between sequential requests
 const MIN_TEXT_LEN   = 10;
-const MAX_TEXT_LEN   = 500;
+const MAX_TEXT_LEN   = 2000;
 
 const USER_AGENT = 'lobstream-relay/1.0 (art installation; github.com/gtdrag/lobstream)';
 
@@ -121,7 +121,7 @@ function processPosts(posts) {
     }
     text = text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
-    if (text.length > MAX_TEXT_LEN) text = text.slice(0, MAX_TEXT_LEN) + '...';
+    if (text.length > MAX_TEXT_LEN) text = text.slice(0, MAX_TEXT_LEN) + '\u2026';
     if (text.length < MIN_TEXT_LEN) continue;
     if (!isMostlyEnglish(text)) continue;
 
