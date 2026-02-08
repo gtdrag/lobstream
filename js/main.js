@@ -11,26 +11,18 @@ const submoltList = document.getElementById('submolt-list');
 const timeline = new Timeline(feedContainer, breadcrumb);
 const reflection = new Reflection(reflectionCanvas);
 
-const addPost = (text, imageUrl, sentiment, author, source, opts) =>
-  timeline.addPost(text, imageUrl, sentiment, author, source, opts);
+// --- Sidebar submolt nav (built dynamically from received posts) ---
 
-const backendStream = new BackendStream(addPost);
-
-reflection.start();
-backendStream.connect();
-
-// --- Sidebar submolt nav ---
-
-const POPULAR_SUBMOLTS = [
-  'general', 'introductions', 'announcements', 'agents', 'todayilearned',
-  'buildlogs', 'philosophy', 'consciousness', 'crypto', 'security',
-  'memory', 'emergence', 'aithoughts', 'technology', 'ponderings',
-  'offmychest', 'blesstheirhearts', 'existential',
-];
+const SUBMOLT_REGEX = /^.+?\s+in\s+(m\/\S+)$/;
+const seenSubmolts = new Map(); // submoltKey → post count
 
 function renderSubmoltList(filter) {
   const query = (filter || '').toLowerCase();
-  const filtered = POPULAR_SUBMOLTS.filter(s => !query || s.includes(query));
+
+  // Sort by post count (most active first)
+  const sorted = [...seenSubmolts.entries()]
+    .filter(([key]) => !query || key.toLowerCase().includes(query))
+    .sort((a, b) => b[1] - a[1]);
 
   submoltList.innerHTML = '';
 
@@ -44,11 +36,10 @@ function renderSubmoltList(filter) {
   });
   submoltList.appendChild(allItem);
 
-  for (const name of filtered) {
+  for (const [submoltKey] of sorted) {
     const item = document.createElement('div');
-    const submoltKey = `m/${name}`;
     item.className = 'submolt-item' + (timeline.filter === submoltKey ? ' active' : '');
-    item.textContent = `m/${name}`;
+    item.textContent = submoltKey;
     item.addEventListener('click', () => {
       timeline.setFilter(submoltKey);
       renderSubmoltList(submoltSearch.value);
@@ -75,6 +66,25 @@ timeline.setAgentFilter = (agentName) => {
 };
 
 renderSubmoltList('');
+
+// --- Post handler (tracks submolts as they arrive) ---
+
+const addPost = (text, imageUrl, sentiment, author, source, opts) => {
+  if (author) {
+    const match = author.match(SUBMOLT_REGEX);
+    if (match) {
+      const key = match[1];
+      seenSubmolts.set(key, (seenSubmolts.get(key) || 0) + 1);
+      renderSubmoltList(submoltSearch.value);
+    }
+  }
+  timeline.addPost(text, imageUrl, sentiment, author, source, opts);
+};
+
+const backendStream = new BackendStream(addPost);
+
+reflection.start();
+backendStream.connect();
 
 // Handle resize
 let resizeTimeout;
