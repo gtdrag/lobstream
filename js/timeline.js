@@ -4,6 +4,15 @@ const MAX_TEXT_LENGTH = 500;
 const URL_REGEX = /(https?:\/\/[^\s<>"')\]]+)/g;
 const SUBMOLT_REGEX = /^(.+?)\s+in\s+(m\/\S+)$/;
 
+// Deterministic hue from submolt name — gives each submolt a subtle color identity
+function submoltHue(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) {
+    h = (h * 31 + name.charCodeAt(i)) | 0;
+  }
+  return ((h % 360) + 360) % 360;
+}
+
 function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
@@ -25,9 +34,15 @@ export class Timeline {
     this.userScrolled = false;
     this.filter = null; // e.g. "m/consciousness"
     this.allCards = []; // keep references for show/hide
+    this.detailOverlay = null;
 
     this.container.addEventListener('scroll', () => {
       this.userScrolled = this.container.scrollTop > 40;
+    });
+
+    // Close detail on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.closeDetail();
     });
   }
 
@@ -35,15 +50,24 @@ export class Timeline {
     this.filter = submolt;
     this.userScrolled = false;
 
-    // Show/hide existing cards
+    // Animated show/hide existing cards
     for (const entry of this.allCards) {
       const show = !submolt || entry.submolt === submolt;
-      entry.card.style.display = show ? '' : 'none';
+      if (show) {
+        entry.card.classList.remove('hiding', 'hidden-filtered');
+      } else {
+        entry.card.classList.add('hiding');
+        // After transition, fully hide so it doesn't take space
+        setTimeout(() => {
+          if (entry.card.classList.contains('hiding')) {
+            entry.card.classList.add('hidden-filtered');
+          }
+        }, 250);
+      }
     }
 
     // Update breadcrumb
     if (submolt) {
-      this.breadcrumb.classList.remove('hidden');
       this.breadcrumb.innerHTML = '';
 
       const allLink = document.createElement('span');
@@ -61,11 +85,127 @@ export class Timeline {
       current.className = 'bc-current';
       current.textContent = submolt;
       this.breadcrumb.appendChild(current);
+
+      this.breadcrumb.classList.add('visible');
     } else {
-      this.breadcrumb.classList.add('hidden');
+      this.breadcrumb.classList.remove('visible');
     }
 
     this.container.scrollTop = 0;
+  }
+
+  // --- Detail modal ---
+
+  openDetail(entry) {
+    this.closeDetail();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'detail-overlay';
+    this.detailOverlay = overlay;
+
+    const panel = document.createElement('div');
+    panel.className = 'detail-panel';
+
+    // Close button
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'detail-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.addEventListener('click', () => this.closeDetail());
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'detail-header';
+
+    const author = document.createElement('span');
+    author.className = 'detail-author';
+    if (entry.submolt) {
+      author.appendChild(document.createTextNode(entry.agentName + ' in '));
+      const badge = document.createElement('span');
+      badge.className = 'detail-submolt';
+      badge.textContent = entry.submolt;
+      badge.addEventListener('click', () => {
+        this.closeDetail();
+        this.setFilter(entry.submolt);
+      });
+      author.appendChild(badge);
+    } else {
+      author.textContent = entry.agentName;
+    }
+    header.appendChild(author);
+
+    const time = document.createElement('span');
+    time.className = 'detail-time';
+    time.textContent = entry.timeLabel || 'just now';
+    header.appendChild(time);
+
+    panel.appendChild(closeBtn);
+    panel.appendChild(header);
+
+    // Full text (not truncated)
+    if (entry.fullText) {
+      const text = document.createElement('div');
+      text.className = 'detail-text';
+      text.innerHTML = autoLink(escapeHtml(entry.fullText));
+      panel.appendChild(text);
+    }
+
+    // Image
+    if (entry.imageUrl) {
+      const img = document.createElement('img');
+      img.className = 'detail-image';
+      img.src = entry.imageUrl;
+      img.crossOrigin = 'anonymous';
+      img.onerror = () => img.remove();
+      panel.appendChild(img);
+    }
+
+    // Meta footer
+    const meta = document.createElement('div');
+    meta.className = 'detail-meta';
+    if (entry.source) {
+      const src = document.createElement('span');
+      src.className = 'detail-meta-item';
+      src.textContent = entry.source;
+      meta.appendChild(src);
+    }
+    if (entry.sentiment) {
+      const sent = document.createElement('span');
+      sent.className = 'detail-meta-item';
+      sent.textContent = entry.sentiment;
+      meta.appendChild(sent);
+    }
+    if (entry.submolt) {
+      const sub = document.createElement('span');
+      sub.className = 'detail-meta-item';
+      sub.textContent = entry.submolt;
+      meta.appendChild(sub);
+    }
+    if (meta.children.length) panel.appendChild(meta);
+
+    overlay.appendChild(panel);
+
+    // Click overlay backdrop to close (not the panel itself)
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this.closeDetail();
+    });
+
+    document.body.appendChild(overlay);
+
+    // Trigger animation on next frame
+    requestAnimationFrame(() => {
+      overlay.classList.add('visible');
+    });
+  }
+
+  closeDetail() {
+    if (!this.detailOverlay) return;
+    const overlay = this.detailOverlay;
+    this.detailOverlay = null;
+
+    overlay.classList.remove('visible');
+    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    // Fallback removal
+    setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 400);
   }
 
   addPost(text, imageUrl, sentiment, author, source, { animate = true } = {}) {
@@ -83,10 +223,11 @@ export class Timeline {
       }
     }
 
-    // Truncate
-    let displayText = text || '';
+    // Keep full text, truncate for card display
+    const fullText = text || '';
+    let displayText = fullText;
     if (displayText.length > MAX_TEXT_LENGTH) {
-      displayText = displayText.slice(0, MAX_TEXT_LENGTH) + '...';
+      displayText = displayText.slice(0, MAX_TEXT_LENGTH) + '\u2026';
     }
 
     // Parse submolt from author string: "AgentName in m/submolt"
@@ -106,6 +247,15 @@ export class Timeline {
     if (!animate) card.classList.add('no-anim');
     if (sentiment) card.classList.add(`sentiment-${sentiment}`);
 
+    // Per-submolt subtle tint (border + faint background)
+    if (submolt) {
+      const hue = submoltHue(submolt);
+      if (!sentiment) {
+        card.style.borderLeftColor = `hsl(${hue} 40% 40%)`;
+      }
+      card.style.setProperty('--submolt-hue', hue);
+    }
+
     // Header
     const header = document.createElement('div');
     header.className = 'post-card-header';
@@ -120,7 +270,10 @@ export class Timeline {
       const submoltLink = document.createElement('span');
       submoltLink.className = 'post-card-submolt';
       submoltLink.textContent = submolt;
-      submoltLink.addEventListener('click', () => this.setFilter(submolt));
+      submoltLink.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.setFilter(submolt);
+      });
       authorEl.appendChild(submoltLink);
     } else {
       authorEl.textContent = agentName;
@@ -134,11 +287,27 @@ export class Timeline {
 
     card.appendChild(header);
 
+    // Track entry data (needed for detail view)
+    const entry = {
+      card, submolt, agentName, fullText, imageUrl, sentiment, source,
+      timeLabel: 'just now',
+    };
+
     // Text
     if (displayText) {
       const textEl = document.createElement('div');
       textEl.className = 'post-card-text';
       textEl.innerHTML = autoLink(escapeHtml(displayText));
+      textEl.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') return;
+        if (this.filter && submolt) {
+          // Already inside a submolt — open detail view
+          this.openDetail(entry);
+        } else if (submolt) {
+          // At root — drill into submolt
+          this.setFilter(submolt);
+        }
+      });
       card.appendChild(textEl);
     }
 
@@ -149,17 +318,17 @@ export class Timeline {
       img.src = imageUrl;
       img.crossOrigin = 'anonymous';
       img.loading = 'lazy';
+      img.onload = () => img.classList.add('loaded');
       img.onerror = () => img.remove();
       card.appendChild(img);
     }
 
     // Track for filtering
-    const entry = { card, submolt };
     this.allCards.unshift(entry);
 
     // Apply current filter
     if (this.filter && submolt !== this.filter) {
-      card.style.display = 'none';
+      card.classList.add('hiding', 'hidden-filtered');
     }
 
     // Prepend (newest on top)
