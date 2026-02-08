@@ -366,13 +366,7 @@ export class Timeline {
       textEl.innerHTML = autoLink(escapeHtml(displayText));
       textEl.addEventListener('click', (e) => {
         if (e.target.tagName === 'A') return;
-        if (this.filter && submolt) {
-          // Already inside a submolt — open detail view
-          this.openDetail(entry);
-        } else if (submolt) {
-          // At root — drill into submolt
-          this.setFilter(submolt);
-        }
+        this.openDetail(entry);
       });
       card.appendChild(textEl);
     }
