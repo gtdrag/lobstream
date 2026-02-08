@@ -144,6 +144,16 @@ function spreadX(containerWidth, existingDrops) {
   return bestX;
 }
 
+// Calculate wrap width that produces a roughly square text block
+function squareWidth(measureCtx, text, fontSize) {
+  const lineHeight = fontSize * 1.3;
+  const totalWidth = measureCtx.measureText(text).width;
+  // For a square: side = sqrt(totalWidth * lineHeight)
+  const side = Math.sqrt(totalWidth * lineHeight);
+  // Clamp between reasonable bounds
+  return Math.max(100, Math.min(side, 500));
+}
+
 // Offscreen canvas for text measurement
 const _measureCanvas = document.createElement('canvas');
 const _measureCtx = _measureCanvas.getContext('2d');
@@ -159,7 +169,10 @@ class Drop {
     this.fontWeight = pick(WEIGHTS);
     this.color = pick(COLORS);
     this.shape = pick(SHAPES);
-    this.wrapWidth = 180 + Math.random() * 350;
+    // Compute wrap width for a square text block
+    const fontStr = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.font}`;
+    _measureCtx.font = fontStr;
+    this.wrapWidth = squareWidth(_measureCtx, this.text, this.fontSize);
     this.x = spreadX(containerWidth, existingDrops);
     this.y = containerHeight + 30 + Math.random() * 80;
     this.speed = 0.35 + Math.random() * 0.35;
@@ -198,8 +211,7 @@ class Drop {
 
     // Shaped text lines
     if (this.text) {
-      const fontStr = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.font}`;
-      _measureCtx.font = fontStr;
+      _measureCtx.font = fontStr; // already defined above
       const lines = wrapTextInShape(_measureCtx, this.text, this.shape, this.wrapWidth, this.fontSize);
 
       for (const line of lines) {
