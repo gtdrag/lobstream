@@ -1,4 +1,4 @@
-const MAX_DROPS = 12;
+const MAX_DROPS = 20;
 const MAX_TEXT_LENGTH = 300;
 const IMG_MAX_SIZE = 150;
 
@@ -237,15 +237,16 @@ class Drop {
     this.y -= this.speed;
     this.x += this.drift;
 
+    // Only fade in the last 3% before leaving the screen
     const normalizedY = this.y / this.containerHeight;
-    if (normalizedY < 0.10) {
-      const fadeProgress = (0.10 - normalizedY) / 0.10;
+    if (normalizedY < 0.03) {
+      const fadeProgress = (0.03 - normalizedY) / 0.03;
       this.opacity = this.baseOpacity * (1 - fadeProgress);
     } else {
       this.opacity = this.baseOpacity;
     }
 
-    if (this.opacity <= 0.01 || this.y < -200) {
+    if (this.opacity <= 0.01 || this.y < -50) {
       this.alive = false;
     }
 
