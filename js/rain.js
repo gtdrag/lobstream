@@ -1,6 +1,6 @@
 const MAX_DROPS = 4;
-const MAX_TEXT_LENGTH = 160;
-const IMG_MAX_SIZE = 120;
+const MAX_TEXT_LENGTH = 300;
+const IMG_MAX_SIZE = 150;
 
 const FONTS = [
   'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace',
@@ -21,6 +21,7 @@ const COLORS = [
   [185, 215, 215],  // sea glass
 ];
 
+const SHAPES = ['rect', 'circle', 'diamond', 'oval'];
 const STYLES = ['normal', 'italic'];
 const WEIGHTS = ['300', '400', '500'];
 
@@ -28,23 +29,100 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Get the available text width at a given row within a shape
+function shapeWidthAt(shape, row, totalRows, maxWidth) {
+  const t = totalRows <= 1 ? 0.5 : row / (totalRows - 1); // 0 to 1
+  switch (shape) {
+    case 'circle': {
+      // Circle: width varies by sin
+      const r = Math.sin(t * Math.PI);
+      return maxWidth * Math.max(r, 0.15);
+    }
+    case 'diamond': {
+      // Diamond: widest in middle, tapers to points
+      const d = 1 - Math.abs(2 * t - 1);
+      return maxWidth * Math.max(d, 0.15);
+    }
+    case 'oval': {
+      // Oval: like circle but wider
+      const o = Math.sin(t * Math.PI);
+      return maxWidth * Math.max(o * 0.7 + 0.3, 0.2);
+    }
+    case 'rect':
+    default:
+      return maxWidth;
+  }
+}
+
+// Word-wrap text into lines constrained by a shape
+function wrapTextInShape(ctx, text, shape, maxWidth, lineHeight) {
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+  if (words.length === 0) return [];
+
+  // First pass: estimate how many lines we need with simple rect wrap
+  const estimatedLines = [];
+  let currentLine = '';
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + ' ' + word : word;
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+      estimatedLines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) estimatedLines.push(currentLine);
+
+  const totalRows = Math.max(estimatedLines.length, 1);
+
+  // Second pass: wrap respecting shape widths
+  const lines = [];
+  let wordIdx = 0;
+  let row = 0;
+
+  while (wordIdx < words.length && row < totalRows + 5) {
+    const rowWidth = shapeWidthAt(shape, row, totalRows, maxWidth);
+    let line = '';
+
+    while (wordIdx < words.length) {
+      const word = words[wordIdx];
+      const testLine = line ? line + ' ' + word : word;
+      if (ctx.measureText(testLine).width > rowWidth && line) {
+        break;
+      }
+      line = testLine;
+      wordIdx++;
+    }
+
+    if (line) {
+      lines.push({ text: line, maxWidth: rowWidth });
+    }
+    row++;
+  }
+
+  return lines;
+}
+
 class Drop {
   constructor(text, canvasWidth, canvasHeight, imageUrl) {
     this.text = text.length > MAX_TEXT_LENGTH
       ? text.slice(0, MAX_TEXT_LENGTH) + '...'
       : text;
-    this.fontSize = 14 + Math.random() * 24; // 14-38px
+    this.fontSize = 18 + Math.random() * 34; // 18-52px
     this.font = pick(FONTS);
     this.fontStyle = pick(STYLES);
     this.fontWeight = pick(WEIGHTS);
     this.color = pick(COLORS);
-    this.x = 40 + Math.random() * (canvasWidth - 300);
-    this.y = -30 - Math.random() * 100;
-    this.speed = 0.03 + Math.random() * 0.07;
+    this.shape = pick(SHAPES);
+    this.wrapWidth = 180 + Math.random() * 350; // 180-530px
+    this.x = 60 + Math.random() * (canvasWidth - 400);
+    this.y = -50 - Math.random() * 150;
+    this.speed = 0.05 + Math.random() * 0.10;
     this.drift = (Math.random() - 0.5) * 0.04;
     this.baseOpacity = 0.7 + Math.random() * 0.25;
     this.opacity = this.baseOpacity;
     this.alive = true;
+    this.wrappedLines = null; // computed lazily on first draw
 
     // Image support
     this.image = null;
@@ -65,9 +143,7 @@ class Drop {
           this.imageWidth = IMG_MAX_SIZE * aspect;
         }
       };
-      img.onerror = () => {
-        // Skip image if it fails to load
-      };
+      img.onerror = () => {};
       img.src = imageUrl;
       this.image = img;
     }
@@ -77,7 +153,6 @@ class Drop {
     this.y += this.speed;
     this.x += this.drift;
 
-    // Fade out in the last 10% of screen
     const normalizedY = this.y / canvasHeight;
     if (normalizedY > 0.90) {
       const fadeProgress = (normalizedY - 0.90) / 0.10;
@@ -155,24 +230,37 @@ export class Rain {
     for (const drop of this.drops) {
       if (drop.opacity <= 0) continue;
       const [r, g, b] = drop.color;
+      const fontStr = `${drop.fontStyle} ${drop.fontWeight} ${drop.fontSize}px ${drop.font}`;
+      ctx.font = fontStr;
+
+      let textY = drop.y;
 
       // Draw image if available
       if (drop.imageLoaded && drop.image) {
         ctx.globalAlpha = drop.opacity;
         ctx.drawImage(drop.image, drop.x, drop.y, drop.imageWidth, drop.imageHeight);
         ctx.globalAlpha = 1;
+        textY = drop.y + drop.imageHeight + 10;
+      }
 
-        // Draw text below image
-        if (drop.text) {
-          ctx.font = `${drop.fontStyle} ${drop.fontWeight} ${drop.fontSize}px ${drop.font}`;
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${drop.opacity})`;
-          ctx.fillText(drop.text, drop.x, drop.y + drop.imageHeight + 8);
-        }
-      } else {
-        // Text only
-        ctx.font = `${drop.fontStyle} ${drop.fontWeight} ${drop.fontSize}px ${drop.font}`;
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${drop.opacity})`;
-        ctx.fillText(drop.text, drop.x, drop.y);
+      if (!drop.text) continue;
+
+      // Lazy-compute wrapped lines
+      if (!drop.wrappedLines) {
+        ctx.font = fontStr;
+        drop.wrappedLines = wrapTextInShape(ctx, drop.text, drop.shape, drop.wrapWidth, drop.fontSize * 1.3);
+      }
+
+      const lineHeight = drop.fontSize * 1.3;
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${drop.opacity})`;
+
+      for (let i = 0; i < drop.wrappedLines.length; i++) {
+        const line = drop.wrappedLines[i];
+        // Center each line within the shape width
+        const lineWidth = ctx.measureText(line.text).width;
+        const offsetX = (line.maxWidth - lineWidth) / 2;
+        const centerOffset = (drop.wrapWidth - line.maxWidth) / 2;
+        ctx.fillText(line.text, drop.x + centerOffset + offsetX, textY + i * lineHeight);
       }
     }
   }
