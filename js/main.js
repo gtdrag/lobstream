@@ -61,10 +61,16 @@ submoltSearch.addEventListener('input', () => {
   renderSubmoltList(submoltSearch.value);
 });
 
-// Re-render list when filter changes from clicking a submolt in a post
+// Re-render sidebar when filters change from clicking in a post
 const origSetFilter = timeline.setFilter.bind(timeline);
 timeline.setFilter = (submolt) => {
   origSetFilter(submolt);
+  renderSubmoltList(submoltSearch.value);
+};
+
+const origSetAgentFilter = timeline.setAgentFilter.bind(timeline);
+timeline.setAgentFilter = (agentName) => {
+  origSetAgentFilter(agentName);
   renderSubmoltList(submoltSearch.value);
 };
 

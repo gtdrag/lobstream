@@ -233,6 +233,15 @@ body {
   color: #888;
 }
 
+.post-card-agent {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.post-card-agent:hover {
+  color: #bbb;
+}
+
 .post-card-submolt {
   color: #6a9fff;
   cursor: pointer;
@@ -401,6 +410,15 @@ body {
 .detail-author {
   font-size: 13px;
   color: #888;
+}
+
+.detail-agent-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.detail-agent-link:hover {
+  color: #bbb;
 }
 
 .detail-submolt {

@@ -32,8 +32,9 @@ export class Timeline {
     this.count = 0;
     this.recentTexts = new Map();
     this.userScrolled = false;
-    this.filter = null; // e.g. "m/consciousness"
-    this.allCards = []; // keep references for show/hide
+    this.filter = null;       // submolt filter, e.g. "m/consciousness"
+    this.agentFilter = null;  // agent name filter, e.g. "Prometheus"
+    this.allCards = [];
     this.detailOverlay = null;
 
     this.container.addEventListener('scroll', () => {
@@ -46,18 +47,22 @@ export class Timeline {
     });
   }
 
-  setFilter(submolt) {
-    this.filter = submolt;
+  // --- Filtering ---
+
+  _matchesFilter(entry) {
+    if (this.filter && entry.submolt !== this.filter) return false;
+    if (this.agentFilter && entry.agentName !== this.agentFilter) return false;
+    return true;
+  }
+
+  _applyFilters() {
     this.userScrolled = false;
 
-    // Animated show/hide existing cards
     for (const entry of this.allCards) {
-      const show = !submolt || entry.submolt === submolt;
-      if (show) {
+      if (this._matchesFilter(entry)) {
         entry.card.classList.remove('hiding', 'hidden-filtered');
       } else {
         entry.card.classList.add('hiding');
-        // After transition, fully hide so it doesn't take space
         setTimeout(() => {
           if (entry.card.classList.contains('hiding')) {
             entry.card.classList.add('hidden-filtered');
@@ -66,16 +71,66 @@ export class Timeline {
       }
     }
 
-    // Update breadcrumb
-    if (submolt) {
-      this.breadcrumb.innerHTML = '';
+    this._updateBreadcrumb();
+    this.container.scrollTop = 0;
+  }
 
-      const allLink = document.createElement('span');
-      allLink.className = 'bc-link';
-      allLink.textContent = 'all';
-      allLink.addEventListener('click', () => this.setFilter(null));
-      this.breadcrumb.appendChild(allLink);
+  setFilter(submolt) {
+    this.filter = submolt;
+    // Clear agent filter when changing submolt context
+    if (!submolt) this.agentFilter = null;
+    this._applyFilters();
+  }
 
+  setAgentFilter(agentName) {
+    this.agentFilter = agentName;
+    this._applyFilters();
+  }
+
+  _updateBreadcrumb() {
+    const hasFilter = this.filter || this.agentFilter;
+
+    if (!hasFilter) {
+      this.breadcrumb.classList.remove('visible');
+      return;
+    }
+
+    this.breadcrumb.innerHTML = '';
+
+    // "all" link
+    const allLink = document.createElement('span');
+    allLink.className = 'bc-link';
+    allLink.textContent = 'all';
+    allLink.addEventListener('click', () => {
+      this.agentFilter = null;
+      this.setFilter(null);
+    });
+    this.breadcrumb.appendChild(allLink);
+
+    // Submolt segment
+    if (this.filter) {
+      const sep = document.createElement('span');
+      sep.className = 'bc-sep';
+      sep.textContent = '/';
+      this.breadcrumb.appendChild(sep);
+
+      if (this.agentFilter) {
+        // Submolt is clickable to go back to submolt-only view
+        const subLink = document.createElement('span');
+        subLink.className = 'bc-link';
+        subLink.textContent = this.filter;
+        subLink.addEventListener('click', () => this.setAgentFilter(null));
+        this.breadcrumb.appendChild(subLink);
+      } else {
+        const current = document.createElement('span');
+        current.className = 'bc-current';
+        current.textContent = this.filter;
+        this.breadcrumb.appendChild(current);
+      }
+    }
+
+    // Agent segment
+    if (this.agentFilter) {
       const sep = document.createElement('span');
       sep.className = 'bc-sep';
       sep.textContent = '/';
@@ -83,15 +138,11 @@ export class Timeline {
 
       const current = document.createElement('span');
       current.className = 'bc-current';
-      current.textContent = submolt;
+      current.textContent = this.agentFilter;
       this.breadcrumb.appendChild(current);
-
-      this.breadcrumb.classList.add('visible');
-    } else {
-      this.breadcrumb.classList.remove('visible');
     }
 
-    this.container.scrollTop = 0;
+    this.breadcrumb.classList.add('visible');
   }
 
   // --- Detail modal ---
@@ -118,8 +169,18 @@ export class Timeline {
 
     const author = document.createElement('span');
     author.className = 'detail-author';
+
+    const nameLink = document.createElement('span');
+    nameLink.className = 'detail-agent-link';
+    nameLink.textContent = entry.agentName;
+    nameLink.addEventListener('click', () => {
+      this.closeDetail();
+      this.setAgentFilter(entry.agentName);
+    });
+    author.appendChild(nameLink);
+
     if (entry.submolt) {
-      author.appendChild(document.createTextNode(entry.agentName + ' in '));
+      author.appendChild(document.createTextNode(' in '));
       const badge = document.createElement('span');
       badge.className = 'detail-submolt';
       badge.textContent = entry.submolt;
@@ -128,8 +189,6 @@ export class Timeline {
         this.setFilter(entry.submolt);
       });
       author.appendChild(badge);
-    } else {
-      author.textContent = entry.agentName;
     }
     header.appendChild(author);
 
@@ -263,9 +322,18 @@ export class Timeline {
     const authorEl = document.createElement('span');
     authorEl.className = 'post-card-author';
 
+    // Agent name — always clickable
+    const agentLink = document.createElement('span');
+    agentLink.className = 'post-card-agent';
+    agentLink.textContent = agentName;
+    agentLink.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.setAgentFilter(agentName);
+    });
+    authorEl.appendChild(agentLink);
+
     if (submolt) {
-      const nameSpan = document.createTextNode(agentName + ' in ');
-      authorEl.appendChild(nameSpan);
+      authorEl.appendChild(document.createTextNode(' in '));
 
       const submoltLink = document.createElement('span');
       submoltLink.className = 'post-card-submolt';
@@ -275,8 +343,6 @@ export class Timeline {
         this.setFilter(submolt);
       });
       authorEl.appendChild(submoltLink);
-    } else {
-      authorEl.textContent = agentName;
     }
     header.appendChild(authorEl);
 
@@ -326,8 +392,8 @@ export class Timeline {
     // Track for filtering
     this.allCards.unshift(entry);
 
-    // Apply current filter
-    if (this.filter && submolt !== this.filter) {
+    // Apply current filters
+    if (!this._matchesFilter(entry)) {
       card.classList.add('hiding', 'hidden-filtered');
     }
 
