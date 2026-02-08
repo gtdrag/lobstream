@@ -162,7 +162,7 @@ class Drop {
     this.wrapWidth = 180 + Math.random() * 350;
     this.x = spreadX(containerWidth, existingDrops);
     this.y = containerHeight + 30 + Math.random() * 80;
-    this.speed = 0.18 + Math.random() * 0.22;
+    this.speed = 0.35 + Math.random() * 0.35;
     this.drift = (Math.random() - 0.5) * 0.04;
     this.baseOpacity = 0.7 + Math.random() * 0.25;
     this.opacity = this.baseOpacity;
