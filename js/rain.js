@@ -269,6 +269,7 @@ export class Rain {
     this.animationId = null;
     this.width = window.innerWidth;
     this.height = window.innerHeight;
+    this.recentTexts = new Map(); // text hash → timestamp for dedup
   }
 
   resize() {
@@ -277,6 +278,19 @@ export class Rain {
   }
 
   addDrop(text, imageUrl) {
+    // Dedup: skip if we've shown this exact text in the last 2 minutes
+    const key = text.trim().toLowerCase().slice(0, 120);
+    const now = Date.now();
+    if (this.recentTexts.has(key)) return;
+    this.recentTexts.set(key, now);
+    // Prune old entries every so often
+    if (this.recentTexts.size > 300) {
+      const cutoff = now - 120_000;
+      for (const [k, ts] of this.recentTexts) {
+        if (ts < cutoff) this.recentTexts.delete(k);
+      }
+    }
+
     if (this.drops.length >= MAX_DROPS) {
       const deadIndex = this.drops.findIndex(d => !d.alive);
       if (deadIndex !== -1) {
