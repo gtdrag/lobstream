@@ -13,7 +13,7 @@ const INSTANCES = [
   'fosstodon.org',       // FOSS / tech
   'hachyderm.io',        // tech-focused
   'mas.to',              // general
-  'chaos.social',         // progressive / CCC-adjacent
+  'toot.community',       // general, progressive-leaning
   'aus.social',           // Australian, progressive-leaning
   'kolektiva.social',    // leftist / activist / anarchist
   'universeodon.com',    // large general, progressive-leaning
