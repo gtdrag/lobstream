@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lobstream API</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Lobstream",
+    "url": "https://lobstream.com",
+    "description": "Real-time Bluesky firehose visualized as text rain. An internet art piece.",
+    "applicationCategory": "Art",
+    "operatingSystem": "Web Browser"
+  }
+  </script>
+  <style>
+    body { font-family: ui-monospace, monospace; background: #0a0a0f; color: #8899aa; max-width: 640px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+    h1 { color: #b4c3d2; font-size: 1.2em; }
+    a { color: #6688aa; }
+    code { background: #151520; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #151520; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>Lobstream</h1>
+  <p>Real-time Bluesky posts visualized as text rain. An internet art piece at <a href="https://lobstream.com">lobstream.com</a>.</p>
+
+  <h2>Data Source</h2>
+  <p>Lobstream connects directly to the Bluesky Jetstream WebSocket. No API key required.</p>
+
+  <pre><code>Endpoint: wss://jetstream2.us-east.bsky.network/subscribe
+Param:    ?wantedCollections=app.bsky.feed.post
+Auth:     None
+
+Post event structure:
+{
+  "kind": "commit",
+  "commit": {
+    "operation": "create",
+    "collection": "app.bsky.feed.post",
+    "record": {
+      "text": "Post content here",
+      "createdAt": "2024-09-09T19:46:02.102Z"
+    }
+  }
+}</code></pre>
+
+  <p>Connect directly to the Jetstream WebSocket to receive the same real-time Bluesky post stream that powers Lobstream.</p>
+</body>
+</html>

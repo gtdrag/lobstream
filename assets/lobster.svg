@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="#c8d0d8">
+  <!-- Lobster silhouette - minimal, ambiguous, could be a lobster or something else -->
+  <!-- Body -->
+  <ellipse cx="200" cy="170" rx="55" ry="30" />
+  <!-- Tail segments -->
+  <ellipse cx="200" cy="210" rx="40" ry="18" />
+  <ellipse cx="200" cy="240" rx="32" ry="14" />
+  <ellipse cx="200" cy="265" rx="24" ry="12" />
+  <!-- Tail fan -->
+  <ellipse cx="185" cy="285" rx="18" ry="8" transform="rotate(-15 185 285)" />
+  <ellipse cx="200" cy="288" rx="16" ry="7" />
+  <ellipse cx="215" cy="285" rx="18" ry="8" transform="rotate(15 215 285)" />
+  <!-- Head -->
+  <ellipse cx="200" cy="140" rx="35" ry="22" />
+  <!-- Eyes -->
+  <circle cx="182" cy="128" r="5" />
+  <circle cx="218" cy="128" r="5" />
+  <!-- Antennae -->
+  <line x1="178" y1="125" x2="130" y2="70" stroke="#c8d0d8" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <line x1="222" y1="125" x2="270" y2="70" stroke="#c8d0d8" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <!-- Shorter antennae -->
+  <line x1="182" y1="122" x2="150" y2="90" stroke="#c8d0d8" stroke-width="2" stroke-linecap="round" fill="none" />
+  <line x1="218" y1="122" x2="250" y2="90" stroke="#c8d0d8" stroke-width="2" stroke-linecap="round" fill="none" />
+  <!-- Claws - left -->
+  <path d="M145 155 Q120 140 100 145 Q80 150 75 165 Q70 180 85 185 Q100 190 110 178 Q115 170 130 165 Z" />
+  <!-- Claw pincer left -->
+  <path d="M80 155 Q60 140 50 150 Q45 158 55 163 Z" />
+  <path d="M78 170 Q58 178 52 170 Q48 162 58 160 Z" />
+  <!-- Claws - right -->
+  <path d="M255 155 Q280 140 300 145 Q320 150 325 165 Q330 180 315 185 Q300 190 290 178 Q285 170 270 165 Z" />
+  <!-- Claw pincer right -->
+  <path d="M320 155 Q340 140 350 150 Q355 158 345 163 Z" />
+  <path d="M322 170 Q342 178 348 170 Q352 162 342 160 Z" />
+  <!-- Walking legs -->
+  <line x1="165" y1="175" x2="120" y2="210" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+  <line x1="160" y1="185" x2="115" y2="225" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+  <line x1="158" y1="195" x2="118" y2="238" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+  <line x1="235" y1="175" x2="280" y2="210" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+  <line x1="240" y1="185" x2="285" y2="225" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+  <line x1="242" y1="195" x2="282" y2="238" stroke="#c8d0d8" stroke-width="3" stroke-linecap="round" />
+</svg>
