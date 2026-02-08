@@ -1,2 +1,6 @@
 .vercel
 .playwright-mcp/
+.env
+relay/.env
+relay/node_modules/
+node_modules/

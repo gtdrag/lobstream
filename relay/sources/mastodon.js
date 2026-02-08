@@ -1,188 +1,142 @@
-// Mastodon source connector — connects to the public streaming API of multiple
-// Mastodon instances via WebSocket and feeds normalised posts into Redis.
+// Mastodon source connector — polls the public timeline REST API of multiple
+// Mastodon instances and feeds normalised posts into Redis.
+//
+// Uses GET /api/v1/timelines/public (no auth required on most instances).
+// Mastodon streaming WebSocket requires auth since v4, so polling is more reliable.
 
-import WebSocket from 'ws';
 import { addMessage } from '../lib/redis.js';
 import { stripHtml } from '../lib/normalize.js';
 
 // ── Configuration ───────────────────────────────────────────────────────────
 
 const INSTANCES = [
-  { host: 'mastodon.social' },   // largest general-purpose instance
-  { host: 'hachyderm.io' },      // tech-focused
-  { host: 'fosstodon.org' },     // FOSS / tech
-  { host: 'mstdn.social' },     // general
-  { host: 'mas.to' },           // general
+  'fosstodon.org',      // FOSS / tech
+  'hachyderm.io',       // tech-focused
+  'mas.to',            // general
+  'mstdn.social',      // general
+  'techhub.social',    // tech community
+  'social.vivaldi.net', // general / international
 ];
 
-const MIN_TEXT_LENGTH = 10;      // skip posts shorter than this after HTML strip
+const POLL_INTERVAL_MS = 15_000;  // poll each instance every 15 seconds
+const POSTS_PER_POLL = 20;       // fetch 20 posts per request
+const MIN_TEXT_LENGTH = 10;       // skip very short posts
+const REQUEST_DELAY_MS = 500;     // delay between instance requests to be polite
 
-// ── Optional classifier (safe to import even if classify.js is absent) ──────
+// ── Optional classifier ─────────────────────────────────────────────────────
 
 let classify = null;
 try {
   const mod = await import('../lib/classify.js');
   classify = mod.classify;
 } catch {
-  // classify.js not available — topics will not be tagged
+  // classify.js not available — proceed without topic tagging
 }
 
-// ── Per-instance connection handler ─────────────────────────────────────────
+// ── Per-instance poller ─────────────────────────────────────────────────────
 
 class MastodonInstance {
-  /**
-   * @param {string} host  - Mastodon instance hostname (e.g. 'mastodon.social')
-   * @param {string} [token] - Optional OAuth access token for authenticated streaming
-   */
-  constructor(host, token) {
+  constructor(host) {
     this.host = host;
-    this.token = token || null;
-    this.ws = null;
     this.running = false;
-    this.reconnectDelay = 1000;        // starting backoff delay in ms
-    this.maxReconnectDelay = 30000;    // ceiling for backoff
-    this.reconnectTimer = null;
+    this.lastSeenId = null;
+    this.timeoutId = null;
   }
 
-  /** Start the connection loop for this instance. */
   start() {
     this.running = true;
-    this._connect();
+    this._poll();
   }
 
-  /** Cleanly stop — no further reconnection attempts. */
   stop() {
     this.running = false;
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    if (this.ws) {
-      this.ws.removeAllListeners();
-      this.ws.close();
-      this.ws = null;
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
   }
 
-  // ── Internal helpers ────────────────────────────────────────────────────
-
-  _buildUrl() {
-    const base = `wss://${this.host}/api/v1/streaming?stream=public`;
-    if (this.token) {
-      return `${base}&access_token=${this.token}`;
-    }
-    return base;
-  }
-
-  _connect() {
+  async _poll() {
     if (!this.running) return;
 
-    const url = this._buildUrl();
-    console.log(`[mastodon][${this.host}] connecting to ${url}`);
-
-    this.ws = new WebSocket(url);
-
-    this.ws.on('open', () => {
-      console.log(`[mastodon][${this.host}] connected`);
-      // Reset backoff on successful connection
-      this.reconnectDelay = 1000;
-    });
-
-    this.ws.on('message', (raw) => {
-      this._handleMessage(raw);
-    });
-
-    this.ws.on('close', (code, reason) => {
-      const reasonStr = reason ? reason.toString() : 'no reason';
-      console.log(`[mastodon][${this.host}] disconnected (code=${code}, reason=${reasonStr})`);
-      this._scheduleReconnect();
-    });
-
-    this.ws.on('error', (err) => {
-      console.error(`[mastodon][${this.host}] error: ${err.message}`);
-      // The 'close' event will fire after this, triggering reconnect
-    });
-  }
-
-  _scheduleReconnect() {
-    if (!this.running) return;
-
-    // Exponential backoff with jitter: delay * (0.5 .. 1.5)
-    const jitter = 0.5 + Math.random();
-    const delay = Math.min(this.reconnectDelay * jitter, this.maxReconnectDelay);
-
-    console.log(`[mastodon][${this.host}] reconnecting in ${Math.round(delay)}ms`);
-
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      // Double the base delay for next attempt (exponential backoff)
-      this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
-      this._connect();
-    }, delay);
-  }
-
-  async _handleMessage(raw) {
     try {
-      const envelope = JSON.parse(raw.toString());
-
-      // We only care about new statuses ('update' events)
-      if (envelope.event !== 'update') return;
-
-      // Mastodon sends the payload as a JSON *string* — parse it again
-      const payload = JSON.parse(envelope.payload);
-
-      // Extract and clean text
-      const text = stripHtml(payload.content || '').trim();
-
-      // Skip very short posts (noise, emoji-only, etc.)
-      if (text.length < MIN_TEXT_LENGTH) return;
-
-      // Build author identifier: username@instance
-      const username = payload.account?.username || 'unknown';
-      const author = `${username}@${this.host}`;
-
-      // Optional classification
-      let topics = [];
-      let confidence = 0;
-      if (classify) {
-        const result = classify(text);
-        if (result) {
-          topics = result.topics;
-          confidence = result.confidence;
-        }
+      let url = `https://${this.host}/api/v1/timelines/public?limit=${POSTS_PER_POLL}`;
+      if (this.lastSeenId) {
+        url += `&since_id=${this.lastSeenId}`;
       }
 
-      // Write to Redis stream
-      await addMessage({ source: 'mastodon', text, author, topics, confidence });
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'lobstream-relay/1.0' },
+      });
+
+      if (!res.ok) {
+        console.error(`[mastodon][${this.host}] HTTP ${res.status}`);
+      } else {
+        const posts = await res.json();
+
+        if (Array.isArray(posts) && posts.length > 0) {
+          // Posts come newest-first; track the newest ID
+          this.lastSeenId = posts[0].id;
+
+          let count = 0;
+          for (const post of posts) {
+            const text = stripHtml(post.content || '').trim();
+            if (text.length < MIN_TEXT_LENGTH) continue;
+
+            const username = post.account?.username || 'unknown';
+            const author = `${username}@${this.host}`;
+
+            let topics = [];
+            let confidence = 0;
+            if (classify) {
+              const result = classify(text);
+              if (result) {
+                topics = result.topics;
+                confidence = result.confidence;
+              }
+            }
+
+            await addMessage({ source: 'mastodon', text, author, topics, confidence });
+            count++;
+          }
+
+          if (count > 0) {
+            console.log(`[mastodon][${this.host}] ${count} new posts`);
+          }
+        }
+      }
     } catch (err) {
-      // Log but don't crash — malformed messages are expected occasionally
-      console.error(`[mastodon][${this.host}] message parse error: ${err.message}`);
+      console.error(`[mastodon][${this.host}] poll error: ${err.message}`);
+    }
+
+    // Schedule next poll
+    if (this.running) {
+      this.timeoutId = setTimeout(() => this._poll(), POLL_INTERVAL_MS);
     }
   }
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-/**
- * Start streaming from all configured Mastodon instances.
- *
- * @param {Array<{host: string, token?: string}>} [customInstances] - Override default instance list
- * @returns {{ stop: () => void }} - Handle to shut down all connections
- */
 export function startMastodon(customInstances) {
-  const list = customInstances || INSTANCES;
+  const hosts = customInstances || INSTANCES;
 
-  console.log(`[mastodon] starting ${list.length} instance connections`);
+  console.log(`[mastodon] starting ${hosts.length} instance pollers`);
 
-  const instances = list.map(({ host, token }) => {
-    const inst = new MastodonInstance(host, token);
-    inst.start();
-    return inst;
-  });
+  const instances = [];
+  let delay = 0;
+
+  for (const host of hosts) {
+    const inst = new MastodonInstance(typeof host === 'string' ? host : host.host);
+    // Stagger the starts so we don't hit all instances at once
+    setTimeout(() => inst.start(), delay);
+    delay += REQUEST_DELAY_MS;
+    instances.push(inst);
+  }
 
   return {
     stop() {
-      console.log('[mastodon] stopping all instance connections');
+      console.log('[mastodon] stopping all instance pollers');
       instances.forEach((inst) => inst.stop());
     },
   };
