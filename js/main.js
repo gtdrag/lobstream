@@ -28,7 +28,7 @@ const nostr = new Nostr(addFilteredDrop);
 const wikipedia = new Wikipedia(addFilteredDrop);
 const hackernews = new HackerNews(addFilteredDrop);
 // Backend sources: filtered server-side via topics param
-const backendStream = new BackendStream(addDrop, { topics: ['ai', 'openclaw'] });
+const backendStream = new BackendStream(addDrop, { topics: ['ai', 'tech', 'crypto', 'finance', 'geopolitics', 'science', 'politics', 'openclaw'] });
 
 // Start animation loops
 rain.start();
