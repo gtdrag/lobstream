@@ -21,6 +21,15 @@ const COLORS = [
   'rgb(185, 215, 215)',  // sea glass
 ];
 
+const SENTIMENT_COLORS = {
+  angry: 'rgb(255, 95, 80)',
+  sarcastic: 'rgb(190, 130, 255)',
+  hopeful: 'rgb(255, 215, 100)',
+  fearful: 'rgb(100, 160, 255)',
+  celebratory: 'rgb(100, 230, 150)',
+  melancholy: 'rgb(130, 185, 195)',
+};
+
 const SHAPES = ['rect'];
 const STYLES = ['normal', 'italic'];
 const WEIGHTS = ['300', '400', '500'];
@@ -159,7 +168,7 @@ const _measureCanvas = document.createElement('canvas');
 const _measureCtx = _measureCanvas.getContext('2d');
 
 class Drop {
-  constructor(text, containerWidth, containerHeight, imageUrl, existingDrops) {
+  constructor(text, containerWidth, containerHeight, imageUrl, existingDrops, sentiment) {
     this.text = text.length > MAX_TEXT_LENGTH
       ? text.slice(0, MAX_TEXT_LENGTH) + '...'
       : text;
@@ -167,7 +176,7 @@ class Drop {
     this.font = pick(FONTS);
     this.fontStyle = pick(STYLES);
     this.fontWeight = pick(WEIGHTS);
-    this.color = pick(COLORS);
+    this.color = (sentiment && SENTIMENT_COLORS[sentiment]) || pick(COLORS);
     this.shape = pick(SHAPES);
     // Compute wrap width for a square text block
     const fontStr = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.font}`;
@@ -278,7 +287,7 @@ export class Rain {
     this.height = window.innerHeight;
   }
 
-  addDrop(text, imageUrl) {
+  addDrop(text, imageUrl, sentiment) {
     // Dedup: skip if we've shown this exact text in the last 2 minutes
     const key = text.trim().toLowerCase().slice(0, 120);
     const now = Date.now();
@@ -302,7 +311,7 @@ export class Rain {
         this.drops.shift();
       }
     }
-    const drop = new Drop(text, this.width, this.height, imageUrl, this.drops);
+    const drop = new Drop(text, this.width, this.height, imageUrl, this.drops, sentiment);
     this.container.appendChild(drop.el);
     this.drops.push(drop);
   }

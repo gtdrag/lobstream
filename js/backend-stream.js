@@ -46,6 +46,7 @@ export class BackendStream {
             imageUrl: data.imageUrl || null,
             source: data.source || 'unknown',
             topics: data.topics ? data.topics.split(',').filter(Boolean) : [],
+            sentiment: data.sentiment || null,
           });
         }
       } catch {
@@ -80,7 +81,7 @@ export class BackendStream {
     this.feedInterval = setInterval(() => {
       if (this.queue.length > 0) {
         const item = this.queue.shift();
-        this.onPost(item.text, item.imageUrl);
+        this.onPost(item.text, item.imageUrl, item.sentiment);
       }
     }, FEED_RATE_MS);
   }

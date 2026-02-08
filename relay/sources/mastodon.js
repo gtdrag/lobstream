@@ -5,6 +5,7 @@
 // Mastodon streaming WebSocket requires auth since v4, so polling is more reliable.
 
 import { addMessage } from '../lib/redis.js';
+import { enqueue as aiEnqueue } from '../lib/ai-batch.js';
 import { stripHtml, isMostlyEnglish } from '../lib/normalize.js';
 
 // ── Configuration ───────────────────────────────────────────────────────────
@@ -99,7 +100,13 @@ class MastodonInstance {
               }
             }
 
-            await addMessage({ source: 'mastodon', text, author, topics, confidence });
+            const post = { source: 'mastodon', text, author, topics, confidence };
+            // Posts with keyword matches go through AI scoring; others go direct
+            if (topics.length > 0) {
+              aiEnqueue(post);
+            } else {
+              await addMessage(post);
+            }
             count++;
           }
 

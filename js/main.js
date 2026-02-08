@@ -16,7 +16,7 @@ const reflection = new Reflection(reflectionCanvas);
 
 // Shared callback — all sources feed into the same rain
 // Filter browser-native sources for AI coding content
-const addDrop = (text, imageUrl) => rain.addDrop(text, imageUrl);
+const addDrop = (text, imageUrl, sentiment) => rain.addDrop(text, imageUrl, sentiment);
 const addFilteredDrop = (text, imageUrl) => {
   if (matchesAICoding(text)) addDrop(text, imageUrl);
 };

@@ -7,6 +7,7 @@
 // No authentication required.
 
 import { addMessage } from '../lib/redis.js';
+import { enqueue as aiEnqueue } from '../lib/ai-batch.js';
 import { isMostlyEnglish } from '../lib/normalize.js';
 
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -178,13 +179,19 @@ async function pollCycle() {
           }
         }
 
-        await addMessage({
+        const msg = {
           source: '4chan',
           text: post.text,
           author: `${post.author} /${post.board}/`,
           topics,
           confidence,
-        });
+        };
+        // Posts with keyword matches go through AI scoring; others go direct
+        if (topics.length > 0) {
+          aiEnqueue(msg);
+        } else {
+          await addMessage(msg);
+        }
       }
     } catch (err) {
       console.error(`[4chan] Error processing /${board}/:`, err.message);

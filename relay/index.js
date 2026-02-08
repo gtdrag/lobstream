@@ -1,5 +1,6 @@
 import { startHealthServer } from './lib/health.js';
 import { redis } from './lib/redis.js';
+import { start as startAiBatch, stop as stopAiBatch } from './lib/ai-batch.js';
 
 // Source connectors
 import { startMastodon } from './sources/mastodon.js';
@@ -22,6 +23,9 @@ async function start() {
     process.exit(1);
   }
 
+  // Start AI batch processor (Tier 2)
+  startAiBatch();
+
   // Start sources
   sources.push(startMastodon());
   sources.push(startFourchan());
@@ -32,6 +36,7 @@ async function start() {
 // Graceful shutdown
 async function shutdown() {
   console.log('Shutting down...');
+  stopAiBatch();
   for (const source of sources) {
     if (source && source.stop) source.stop();
   }
