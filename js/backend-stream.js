@@ -1,5 +1,6 @@
 const FEED_RATE_MS = 4000;
 const MAX_QUEUE_SIZE = 200;
+const BACKFILL_FLUSH_DELAY = 300; // ms after connect to flush initial batch
 
 export class BackendStream {
   constructor(onPost, options = {}) {
@@ -10,11 +11,11 @@ export class BackendStream {
     this.queue = [];
     this.feedInterval = null;
     this.seen = new Set();
+    this.connected = false;
+    this.backfillFlushed = false;
   }
 
   connect() {
-    this.startFeedLoop();
-
     const params = new URLSearchParams();
     if (this.sources.length) params.set('sources', this.sources.join(','));
     if (this.topics.length) params.set('topics', this.topics.join(','));
@@ -25,6 +26,12 @@ export class BackendStream {
 
     this.eventSource.addEventListener('connected', () => {
       console.log('[BackendStream] connected to SSE');
+      this.connected = true;
+
+      // After a short delay, flush everything we've received as the backfill
+      setTimeout(() => {
+        this.flushBackfill();
+      }, BACKFILL_FLUSH_DELAY);
     });
 
     this.eventSource.addEventListener('post', (e) => {
@@ -40,14 +47,23 @@ export class BackendStream {
           }
         }
         const data = JSON.parse(e.data);
-        if (this.queue.length < MAX_QUEUE_SIZE) {
-          this.queue.push({
-            text: data.text || '',
-            imageUrl: data.imageUrl || null,
-            source: data.source || 'unknown',
-            topics: data.topics ? data.topics.split(',').filter(Boolean) : [],
-            sentiment: data.sentiment || null,
-          });
+        const item = {
+          text: data.text || '',
+          imageUrl: data.imageUrl || null,
+          source: data.source || 'unknown',
+          author: data.author || null,
+          topics: data.topics ? data.topics.split(',').filter(Boolean) : [],
+          sentiment: data.sentiment || null,
+        };
+
+        if (this.backfillFlushed) {
+          // After backfill, drip new posts through the queue
+          if (this.queue.length < MAX_QUEUE_SIZE) {
+            this.queue.push(item);
+          }
+        } else {
+          // Before backfill flush, collect everything
+          this.queue.push(item);
         }
       } catch {
         // ignore parse errors
@@ -70,10 +86,18 @@ export class BackendStream {
     });
 
     this.eventSource.onerror = () => {
-      // EventSource auto-reconnects on connection loss.
-      // The browser will retry after a brief delay.
       console.warn('[BackendStream] connection error, will auto-reconnect');
     };
+  }
+
+  flushBackfill() {
+    // Render all queued backfill posts immediately, no animation
+    while (this.queue.length > 0) {
+      const item = this.queue.shift();
+      this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source, { animate: false });
+    }
+    this.backfillFlushed = true;
+    this.startFeedLoop();
   }
 
   startFeedLoop() {
@@ -81,7 +105,7 @@ export class BackendStream {
     this.feedInterval = setInterval(() => {
       if (this.queue.length > 0) {
         const item = this.queue.shift();
-        this.onPost(item.text, item.imageUrl, item.sentiment);
+        this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source);
       }
     }, FEED_RATE_MS);
   }

@@ -13,7 +13,7 @@ import { isMostlyEnglish } from '../lib/normalize.js';
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const BOARDS = ['pol', 'news', 'g', 'sci', 'biz'];
-const POLL_INTERVAL_MS = 60_000;   // 1 minute between full poll cycles
+const POLL_INTERVAL_MS = 180_000;  // 3 minutes between full poll cycles
 const REQUEST_DELAY_MS = 1_100;    // >1 s between HTTP requests (rate limit)
 const MIN_TEXT_LENGTH   = 10;      // skip very short / empty posts
 

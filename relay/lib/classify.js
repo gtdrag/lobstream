@@ -63,6 +63,10 @@ export const openclawPattern = buildPattern([
   'lobstream',
   'open claw',
   'open-claw',
+  'Moltbook',
+  'submolt',
+  'Crustafarianism',
+  'molt',
 ]);
 
 export const politicsPattern = buildPattern([

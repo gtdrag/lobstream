@@ -37,11 +37,16 @@ export class Reflection {
 
   resize() {
     const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = window.innerWidth * dpr;
-    this.canvas.height = window.innerHeight * dpr;
+    const rect = this.canvas.parentElement
+      ? this.canvas.getBoundingClientRect()
+      : { width: window.innerWidth, height: window.innerHeight };
+    const w = rect.width || 200;
+    const h = rect.height || window.innerHeight;
+    this.canvas.width = w * dpr;
+    this.canvas.height = h * dpr;
     this.ctx.scale(dpr, dpr);
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    this.width = w;
+    this.height = h;
   }
 
   loadImage() {
@@ -105,8 +110,8 @@ export class Reflection {
     const breathe = Math.sin((elapsed / BREATHE_PERIOD) * Math.PI * 2) * BREATHE_AMPLITUDE;
     const opacity = BASE_OPACITY + breathe;
 
-    // Size the lobster big — 55% of the smaller dimension
-    const size = Math.min(this.width, this.height) * 0.55;
+    // Size the lobster to fit the sidebar
+    const size = Math.min(this.width * 1.0, this.height * 0.6);
     const aspect = this.image.naturalWidth / this.image.naturalHeight;
     const drawWidth = size * aspect;
     const drawHeight = size;

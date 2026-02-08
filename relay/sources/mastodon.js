@@ -21,8 +21,8 @@ const INSTANCES = [
   'mstdn.social',        // general
 ];
 
-const POLL_INTERVAL_MS = 15_000;  // poll each instance every 15 seconds
-const POSTS_PER_POLL = 20;       // fetch 20 posts per request
+const POLL_INTERVAL_MS = 60_000;  // poll each instance every 60 seconds
+const POSTS_PER_POLL = 10;       // fetch 10 posts per request
 const MIN_TEXT_LENGTH = 10;       // skip very short posts
 const REQUEST_DELAY_MS = 500;     // delay between instance requests to be polite
 

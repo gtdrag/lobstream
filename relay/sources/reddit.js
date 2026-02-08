@@ -30,7 +30,7 @@ const SUBREDDITS = [
   'Futurology',
 ];
 
-const POLL_INTERVAL_MS = 60_000;    // 1 minute between full cycles
+const POLL_INTERVAL_MS = 180_000;   // 3 minutes between full cycles
 const REQUEST_DELAY_MS = 2_500;     // 2.5s between requests (Reddit wants <1/sec)
 const MIN_TEXT_LENGTH = 15;
 const USER_AGENT = 'lobstream-relay/1.0 (art installation; contact: github.com/gtdrag/lobstream)';

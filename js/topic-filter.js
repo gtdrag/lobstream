@@ -36,8 +36,9 @@ const TOPIC_PATTERN = new RegExp([
   'Inflection', 'Character\\.AI', 'Replika', 'Jasper AI',
   'Scale AI', 'Weights & Biases', 'Hugging Face',
   'NVIDIA', 'GPU', 'TPU', 'chip', 'semiconductor',
-  // OpenClaw
+  // OpenClaw & Moltbook
   'OpenClaw', 'Clawdbot', 'lobstream', 'open.?claw',
+  'Moltbook', 'submolt', 'Crustafarianism', 'molt',
 ].map(kw => `\\b${kw}\\b`).join('|'), 'i');
 
 // Check if text is mostly English (Latin characters).

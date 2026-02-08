@@ -184,7 +184,7 @@ class Drop {
     this.wrapWidth = squareWidth(_measureCtx, this.text, this.fontSize);
     this.x = spreadX(containerWidth, existingDrops);
     this.y = containerHeight + 30 + Math.random() * 80;
-    this.speed = 0.35 + Math.random() * 0.35;
+    this.speed = 0.25 + Math.random() * 0.3;
     this.drift = (Math.random() - 0.5) * 0.04;
     this.baseOpacity = 0.7 + Math.random() * 0.25;
     this.opacity = this.baseOpacity;
@@ -248,16 +248,18 @@ class Drop {
     this.y -= this.speed;
     this.x += this.drift;
 
-    // Only fade in the last 3% before leaving the screen
+    // Let drops travel all the way to the very top of the viewport.
+    // Only start fading when they're in the top 8% of the screen,
+    // and kill them once they're fully off-screen.
     const normalizedY = this.y / this.containerHeight;
-    if (normalizedY < 0.03) {
-      const fadeProgress = (0.03 - normalizedY) / 0.03;
+    if (normalizedY < 0.08) {
+      const fadeProgress = Math.min(1, (0.08 - normalizedY) / 0.08);
       this.opacity = this.baseOpacity * (1 - fadeProgress);
     } else {
       this.opacity = this.baseOpacity;
     }
 
-    if (this.opacity <= 0.01 || this.y < -50) {
+    if (this.opacity <= 0.01 || this.y < -200) {
       this.alive = false;
     }
 

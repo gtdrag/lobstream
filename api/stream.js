@@ -4,8 +4,6 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const sourcesFilter = searchParams.get('sources')?.split(',').filter(Boolean) || [];
   const topicsFilter = searchParams.get('topics')?.split(',').filter(Boolean) || [];
-  // On reconnect, EventSource sends Last-Event-ID header automatically.
-  // Use it to resume from where we left off instead of re-reading everything.
   const lastEventId = req.headers.get('Last-Event-ID');
   const after = lastEventId || searchParams.get('after') || '0-0';
 
@@ -21,6 +19,7 @@ export default async function handler(req) {
   const startTime = Date.now();
   const MAX_DURATION = 25000;
   let lastHeartbeat = Date.now();
+  const isFreshConnection = !lastEventId && after === '0-0';
 
   async function redisCommand(command) {
     const res = await fetch(REDIS_URL, {
@@ -39,6 +38,25 @@ export default async function handler(req) {
 
     const data = await res.json();
     return data.result;
+  }
+
+  function parseEntry(entry) {
+    const id = entry[0];
+    const fields = entry[1];
+    if (!id || !Array.isArray(fields)) return null;
+
+    const msg = {};
+    for (let i = 0; i < fields.length; i += 2) {
+      msg[fields[i]] = fields[i + 1];
+    }
+
+    if (sourcesFilter.length && !sourcesFilter.includes(msg.source)) return null;
+    if (topicsFilter.length) {
+      const msgTopics = (msg.topics || '').split(',').filter(Boolean);
+      if (!topicsFilter.some((t) => msgTopics.includes(t))) return null;
+    }
+
+    return { id, msg };
   }
 
   const stream = new ReadableStream({
@@ -66,9 +84,43 @@ export default async function handler(req) {
         }
       }
 
-      // Send initial connected event
       enqueue('event: connected\ndata: {"status":"ok"}\n\n');
 
+      // On fresh connections, backfill the most recent 30 posts so the page
+      // is never empty — regardless of how old they are.
+      if (isFreshConnection) {
+        try {
+          const recent = await redisCommand([
+            'XREVRANGE',
+            'lobstream:firehose',
+            '+',
+            '-',
+            'COUNT',
+            '30',
+          ]);
+
+          if (recent && Array.isArray(recent) && recent.length > 0) {
+            // XREVRANGE returns newest-first; reverse so client gets oldest-first
+            const entries = recent.reverse();
+            for (const entry of entries) {
+              const parsed = parseEntry(entry);
+              if (!parsed) continue;
+
+              enqueue(
+                `id: ${parsed.id}\n` +
+                `event: post\n` +
+                `data: ${JSON.stringify(parsed.msg)}\n\n`
+              );
+              lastId = parsed.id;
+            }
+          }
+        } catch (err) {
+          const safeMessage = (err.message || 'unknown error').replace(/"/g, '\\"');
+          enqueue(`event: error\ndata: {"message":"${safeMessage}"}\n\n`);
+        }
+      }
+
+      // Continue polling for new posts
       const poll = async () => {
         if (closed || Date.now() - startTime > MAX_DURATION) {
           close();
@@ -76,10 +128,9 @@ export default async function handler(req) {
         }
 
         try {
-          // Use "(" prefix for exclusive start — Upstash REST API supports
-          // the same XRANGE syntax as Redis: "(" before the ID means exclusive.
-          // For the initial "0-0" start, use "-" to read from the very beginning.
-          const rangeStart = lastId === '0-0' ? '-' : '(' + lastId;
+          const rangeStart = lastId === '0-0'
+            ? String(Date.now() - 120_000)
+            : '(' + lastId;
           const result = await redisCommand([
             'XRANGE',
             'lobstream:firehose',
@@ -91,43 +142,21 @@ export default async function handler(req) {
 
           if (result && Array.isArray(result) && result.length > 0) {
             for (const entry of result) {
-              // Upstash REST API returns stream entries as [id, [field, value, ...]]
-              const id = entry[0];
-              const fields = entry[1];
-
-              if (!id || !Array.isArray(fields)) continue;
-
-              // Parse fields array into object
-              const msg = {};
-              for (let i = 0; i < fields.length; i += 2) {
-                msg[fields[i]] = fields[i + 1];
-              }
-
-              // Apply source filter
-              if (sourcesFilter.length && !sourcesFilter.includes(msg.source)) {
-                lastId = id;
+              const parsed = parseEntry(entry);
+              if (!parsed) {
+                lastId = entry[0];
                 continue;
               }
 
-              // Apply topic filter
-              if (topicsFilter.length) {
-                const msgTopics = (msg.topics || '').split(',').filter(Boolean);
-                if (!topicsFilter.some((t) => msgTopics.includes(t))) {
-                  lastId = id;
-                  continue;
-                }
-              }
-
-              const event =
-                `id: ${id}\n` +
+              enqueue(
+                `id: ${parsed.id}\n` +
                 `event: post\n` +
-                `data: ${JSON.stringify(msg)}\n\n`;
-              enqueue(event);
-              lastId = id;
+                `data: ${JSON.stringify(parsed.msg)}\n\n`
+              );
+              lastId = parsed.id;
             }
           }
 
-          // Heartbeat every 10 seconds to keep the connection alive
           if (Date.now() - lastHeartbeat > 10000) {
             enqueue(`event: heartbeat\ndata: {"ts":${Date.now()}}\n\n`);
             lastHeartbeat = Date.now();
@@ -138,7 +167,7 @@ export default async function handler(req) {
         }
 
         if (!closed && Date.now() - startTime < MAX_DURATION) {
-          setTimeout(poll, 1500);
+          setTimeout(poll, 8000);
         } else {
           close();
         }
