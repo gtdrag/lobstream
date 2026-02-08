@@ -20,6 +20,37 @@ try {
   aiEnqueue = mod.enqueue;
 } catch {}
 
+// -- Content filters ----------------------------------------------------------
+
+/**
+ * Reject posts that look like JSON, code, or structured data rather than
+ * human-readable prose. Checks for common machine-text patterns.
+ */
+function isHumanReadable(text) {
+  const trimmed = text.trim();
+
+  // Starts with { or [ — likely JSON
+  if (/^\s*[\[{]/.test(trimmed) && /[\]}]\s*$/.test(trimmed)) return false;
+
+  // Heavy brace/bracket density — code or structured data
+  const braceCount = (trimmed.match(/[{}\[\]]/g) || []).length;
+  if (braceCount > 6 && braceCount / trimmed.length > 0.03) return false;
+
+  // Looks like key:value or key=value pairs (config/env dumps)
+  const kvLines = trimmed.split(/\s+/).filter(w => /^[A-Z_]{2,}=/.test(w) || /^"\w+":\s/.test(w));
+  if (kvLines.length > 3) return false;
+
+  // Mostly code-like characters: semicolons, arrows, pipes, etc.
+  const codeChars = (trimmed.match(/[;|<>{}()=&^~`]/g) || []).length;
+  if (codeChars / trimmed.length > 0.08) return false;
+
+  // Starts with common code/log patterns
+  if (/^(import |export |const |let |var |function |class |def |async |await |console\.)/.test(trimmed)) return false;
+  if (/^\d{4}-\d{2}-\d{2}[T ]/.test(trimmed)) return false; // log timestamps
+
+  return true;
+}
+
 // -- Config -------------------------------------------------------------------
 
 const BASE_URL = 'https://www.moltbook.com/api/v1';
@@ -124,6 +155,7 @@ function processPosts(posts) {
     if (text.length > MAX_TEXT_LEN) text = text.slice(0, MAX_TEXT_LEN) + '\u2026';
     if (text.length < MIN_TEXT_LEN) continue;
     if (!isMostlyEnglish(text)) continue;
+    if (!isHumanReadable(text)) continue;
 
     const agentName = post.agent?.name || post.author?.name || post.agent_name || 'unknown-agent';
     const submolt = post.submolt?.name || post.submolt_name || post.submolt || '';
