@@ -231,6 +231,10 @@ async function pushEnriched(post, relevance, sentiment, aiTier) {
     sentiment: sentiment || '',
     ai_tier: aiTier,
     imageUrl: post.imageUrl || null,
+    upvotes: post.upvotes,
+    downvotes: post.downvotes,
+    commentCount: post.commentCount,
+    createdAt: post.createdAt,
   });
 }
 

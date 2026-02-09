@@ -13,6 +13,17 @@ function submoltHue(name) {
   return ((h % 360) + 360) % 360;
 }
 
+function formatTime(isoString) {
+  if (!isoString) return 'just now';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return 'just now';
+  const diff = Date.now() - date.getTime();
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
@@ -175,7 +186,11 @@ export class Timeline {
     nameLink.textContent = entry.agentName;
     nameLink.addEventListener('click', () => {
       this.closeDetail();
-      this.setAgentFilter(entry.agentName);
+      if (window.lobstream?.openAgentProfile) {
+        window.lobstream.openAgentProfile(entry.agentName);
+      } else {
+        this.setAgentFilter(entry.agentName);
+      }
     });
     author.appendChild(nameLink);
 
@@ -216,6 +231,26 @@ export class Timeline {
       img.crossOrigin = 'anonymous';
       img.onerror = () => img.remove();
       panel.appendChild(img);
+    }
+
+    // Stats section
+    if ((entry.upvotes && entry.upvotes > 0) || (entry.commentCount && entry.commentCount > 0)) {
+      const statsDiv = document.createElement('div');
+      statsDiv.className = 'detail-stats';
+      if (entry.upvotes > 0) {
+        const item = document.createElement('div');
+        item.className = 'detail-stat-item';
+        const net = entry.upvotes - (entry.downvotes || 0);
+        item.innerHTML = `<span class="stat-value">${net > 0 ? '+' : ''}${net}</span><span class="stat-label">votes</span>`;
+        statsDiv.appendChild(item);
+      }
+      if (entry.commentCount > 0) {
+        const item = document.createElement('div');
+        item.className = 'detail-stat-item';
+        item.innerHTML = `<span class="stat-value">${entry.commentCount}</span><span class="stat-label">replies</span>`;
+        statsDiv.appendChild(item);
+      }
+      panel.appendChild(statsDiv);
     }
 
     // Meta footer
@@ -267,7 +302,7 @@ export class Timeline {
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 400);
   }
 
-  addPost(text, imageUrl, sentiment, author, source, { animate = true } = {}) {
+  addPost(text, imageUrl, sentiment, author, source, { animate = true, upvotes = 0, downvotes = 0, commentCount = 0, createdAt = null } = {}) {
     if (!text && !imageUrl) return;
 
     // Dedup
@@ -328,7 +363,11 @@ export class Timeline {
     agentLink.textContent = agentName;
     agentLink.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.setAgentFilter(agentName);
+      if (window.lobstream?.openAgentProfile) {
+        window.lobstream.openAgentProfile(agentName);
+      } else {
+        this.setAgentFilter(agentName);
+      }
     });
     authorEl.appendChild(agentLink);
 
@@ -348,15 +387,37 @@ export class Timeline {
 
     const timeEl = document.createElement('span');
     timeEl.className = 'post-card-time';
-    timeEl.textContent = 'just now';
+    timeEl.textContent = formatTime(createdAt);
     header.appendChild(timeEl);
 
     card.appendChild(header);
 
+    // Stats row (votes + comments)
+    if (upvotes > 0 || commentCount > 0) {
+      const stats = document.createElement('div');
+      stats.className = 'post-card-stats';
+      if (upvotes > 0) {
+        const v = document.createElement('span');
+        v.className = 'post-stat';
+        const net = upvotes - downvotes;
+        v.textContent = `${net > 0 ? '+' : ''}${net}`;
+        v.title = `${upvotes} up / ${downvotes} down`;
+        stats.appendChild(v);
+      }
+      if (commentCount > 0) {
+        const c = document.createElement('span');
+        c.className = 'post-stat';
+        c.textContent = `${commentCount} replies`;
+        stats.appendChild(c);
+      }
+      card.appendChild(stats);
+    }
+
     // Track entry data (needed for detail view)
     const entry = {
       card, submolt, agentName, fullText, imageUrl, sentiment, source,
-      timeLabel: 'just now',
+      timeLabel: formatTime(createdAt),
+      upvotes, downvotes, commentCount, createdAt,
     };
 
     // Text

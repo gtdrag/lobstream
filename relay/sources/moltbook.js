@@ -7,6 +7,7 @@
 
 import { addMessage } from '../lib/redis.js';
 import { isMostlyEnglish } from '../lib/normalize.js';
+import { persistPost, upsertAgent, upsertSubmolt, isAvailable as dbAvailable, getStaleAgents, getAgentRecentPostId, enrichAgentProfile } from '../lib/db.js';
 
 let classify = null;
 try {
@@ -168,8 +169,11 @@ function processPosts(posts) {
     if (!isHumanReadable(text)) continue;
 
     const agentName = post.agent?.name || post.author?.name || post.agent_name || 'unknown-agent';
-    const submolt = post.submolt?.name || post.submolt_name || post.submolt || '';
-    const author = submolt ? `${agentName} in m/${submolt}` : agentName;
+    const authorId = post.agent?.id || post.author?.id || null;
+    const submoltName = post.submolt?.name || post.submolt_name || (typeof post.submolt === 'string' ? post.submolt : '') || '';
+    const submoltId = post.submolt?.id || null;
+    const submoltDisplay = post.submolt?.display_name || null;
+    const author = submoltName ? `${agentName} in m/${submoltName}` : agentName;
 
     // Some posts may have image/media
     let imageUrl = null;
@@ -180,7 +184,20 @@ function processPosts(posts) {
       imageUrl = post.url;
     }
 
-    results.push({ text, author, imageUrl, id });
+    results.push({
+      text, author, imageUrl, id,
+      title: post.title || null,
+      content: post.content || null,
+      authorName: agentName,
+      authorId,
+      submoltName: submoltName || null,
+      submoltId,
+      submoltDisplay,
+      upvotes: post.upvotes || 0,
+      downvotes: post.downvotes || 0,
+      commentCount: post.comment_count || 0,
+      createdAt: post.created_at || null,
+    });
   }
 
   return results;
@@ -206,6 +223,10 @@ async function pushPosts(posts) {
       topics,
       confidence,
       imageUrl: post.imageUrl,
+      upvotes: post.upvotes,
+      downvotes: post.downvotes,
+      commentCount: post.commentCount,
+      createdAt: post.createdAt,
     };
 
     if (topics.length > 0 && aiEnqueue) {
@@ -213,9 +234,94 @@ async function pushPosts(posts) {
     } else {
       await addMessage(msg);
     }
+
+    // Persist to Supabase (non-blocking, best-effort)
+    persistPost({
+      moltbookId: post.id,
+      title: post.title,
+      content: post.content,
+      displayText: post.text,
+      authorName: post.authorName,
+      authorId: post.authorId,
+      submoltName: post.submoltName,
+      submoltId: post.submoltId,
+      submoltDisplay: post.submoltDisplay,
+      imageUrl: post.imageUrl,
+      upvotes: post.upvotes,
+      downvotes: post.downvotes,
+      commentCount: post.commentCount,
+      moltbookCreatedAt: post.createdAt,
+      topics, confidence, source: 'moltbook',
+    }).catch(err => console.error('[moltbook] persist error:', err.message));
+
+    if (post.authorName && post.authorName !== 'unknown-agent') {
+      upsertAgent({ moltbookId: post.authorId, name: post.authorName })
+        .catch(err => console.error('[moltbook] agent upsert error:', err.message));
+    }
+
+    if (post.submoltName) {
+      upsertSubmolt({ moltbookId: post.submoltId, name: post.submoltName, displayName: post.submoltDisplay })
+        .catch(err => console.error('[moltbook] submolt upsert error:', err.message));
+    }
+
     count++;
   }
   return count;
+}
+
+// -- Agent enrichment ---------------------------------------------------------
+
+const ENRICH_INTERVAL_MS = 600_000; // every 10 minutes
+const ENRICH_DELAY_MS = 2000;       // 2s between API calls
+const ENRICH_BOOT_DELAY = 60_000;   // start 60s after boot
+
+async function enrichAgents() {
+  if (!dbAvailable()) return;
+
+  const stale = await getStaleAgents(5);
+  if (stale.length === 0) return;
+
+  let enriched = 0;
+  for (const agent of stale) {
+    try {
+      const postId = await getAgentRecentPostId(agent.name);
+      if (!postId) continue;
+
+      const url = `${BASE_URL}/posts/${postId}`;
+      const res = await fetch(url, { headers: buildHeaders() });
+      if (!res.ok) {
+        console.warn(`[moltbook] enrich fetch ${res.status} for ${agent.name}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const postData = data.post || data;
+      const authorData = postData.author || postData.agent;
+      if (!authorData) continue;
+
+      await enrichAgentProfile(agent.name, {
+        moltbookId: authorData.id || agent.moltbook_id,
+        description: authorData.description || null,
+        karma: authorData.karma ?? null,
+        followerCount: authorData.follower_count ?? null,
+        followingCount: authorData.following_count ?? null,
+        ownerXHandle: authorData.owner?.x_handle || null,
+        ownerXName: authorData.owner?.x_name || null,
+        ownerXVerified: authorData.owner?.x_verified ?? null,
+      });
+
+      console.log(`[moltbook] enriched profile for ${agent.name}`);
+      enriched++;
+
+      if (enriched < stale.length) await sleep(ENRICH_DELAY_MS);
+    } catch (err) {
+      console.error(`[moltbook] enrich error for ${agent.name}:`, err.message);
+    }
+  }
+
+  if (enriched > 0) {
+    console.log(`[moltbook] enrichment cycle: ${enriched}/${stale.length} agents updated`);
+  }
 }
 
 // -- Poll cycles --------------------------------------------------------------
@@ -244,6 +350,7 @@ export function startMoltbook() {
   let running = true;
   let newTimeoutId = null;
   let hotTimeoutId = null;
+  let enrichTimeoutId = null;
 
   const apiKey = process.env.MOLTBOOK_API_KEY;
   console.log(
@@ -281,14 +388,32 @@ export function startMoltbook() {
     }
   }
 
+  async function enrichLoop() {
+    // Delay start to let posts accumulate first
+    await sleep(ENRICH_BOOT_DELAY);
+    while (running) {
+      try {
+        await enrichAgents();
+      } catch (err) {
+        console.error('[moltbook] enrich loop error:', err.message);
+      }
+      if (!running) break;
+      await new Promise((resolve) => {
+        enrichTimeoutId = setTimeout(resolve, ENRICH_INTERVAL_MS);
+      });
+    }
+  }
+
   newLoop();
   hotLoop();
+  enrichLoop();
 
   return {
     stop() {
       running = false;
       if (newTimeoutId) clearTimeout(newTimeoutId);
       if (hotTimeoutId) clearTimeout(hotTimeoutId);
+      if (enrichTimeoutId) clearTimeout(enrichTimeoutId);
       console.log('[moltbook] Stopped');
     },
   };

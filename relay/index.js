@@ -1,5 +1,6 @@
 import { startHealthServer } from './lib/health.js';
 import { redis } from './lib/redis.js';
+import { initDb } from './lib/db.js';
 import { start as startAiBatch, stop as stopAiBatch } from './lib/ai-batch.js';
 
 // Source connectors — Moltbook only (other sources disabled to conserve Redis commands)
@@ -26,6 +27,9 @@ async function start() {
     console.error('Redis connection failed:', err.message);
     process.exit(1);
   }
+
+  // Initialize Supabase persistence (no-ops if env vars missing)
+  initDb();
 
   // Start AI batch processor (Tier 2)
   startAiBatch();

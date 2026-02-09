@@ -54,6 +54,10 @@ export class BackendStream {
           author: data.author || null,
           topics: data.topics ? data.topics.split(',').filter(Boolean) : [],
           sentiment: data.sentiment || null,
+          upvotes: data.upvotes ? parseInt(data.upvotes, 10) : 0,
+          downvotes: data.downvotes ? parseInt(data.downvotes, 10) : 0,
+          commentCount: data.commentCount ? parseInt(data.commentCount, 10) : 0,
+          createdAt: data.createdAt || null,
         };
 
         if (this.backfillFlushed) {
@@ -94,7 +98,10 @@ export class BackendStream {
     // Render all queued backfill posts immediately, no animation
     while (this.queue.length > 0) {
       const item = this.queue.shift();
-      this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source, { animate: false });
+      this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source, {
+        animate: false, upvotes: item.upvotes, downvotes: item.downvotes,
+        commentCount: item.commentCount, createdAt: item.createdAt,
+      });
     }
     this.backfillFlushed = true;
     this.startFeedLoop();
@@ -105,7 +112,10 @@ export class BackendStream {
     this.feedInterval = setInterval(() => {
       if (this.queue.length > 0) {
         const item = this.queue.shift();
-        this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source);
+        this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source, {
+          upvotes: item.upvotes, downvotes: item.downvotes,
+          commentCount: item.commentCount, createdAt: item.createdAt,
+        });
       }
     }, FEED_RATE_MS);
   }

@@ -1,6 +1,7 @@
 import { Timeline } from './timeline.js';
 import { Reflection } from './reflection.js';
 import { BackendStream } from './backend-stream.js';
+import { AgentProfile } from './agent-profile.js';
 
 const feedContainer = document.getElementById('feed');
 const breadcrumb = document.getElementById('breadcrumb');
@@ -80,6 +81,10 @@ const addPost = (text, imageUrl, sentiment, author, source, opts) => {
   }
   timeline.addPost(text, imageUrl, sentiment, author, source, opts);
 };
+
+const agentProfile = new AgentProfile();
+window.lobstream = window.lobstream || {};
+window.lobstream.openAgentProfile = (name) => agentProfile.open(name);
 
 const backendStream = new BackendStream(addPost);
 
