@@ -23,11 +23,26 @@ try {
 // -- Content filters ----------------------------------------------------------
 
 /**
+ * Reject mbc-20 inscription spam — bots minting CLAW/GPT tokens.
+ * These often wrap JSON payloads in human-sounding text.
+ */
+function isInscriptionSpam(text) {
+  if (/\bmbc-20\b/i.test(text)) return true;
+  if (/"op"\s*:\s*"(mint|link)"/i.test(text)) return true;
+  if (/"tick"\s*:\s*"(CLAW|GPT)"/i.test(text)) return true;
+  if (/mbc20\.xyz/i.test(text)) return true;
+  return false;
+}
+
+/**
  * Reject posts that look like JSON, code, or structured data rather than
  * human-readable prose. Checks for common machine-text patterns.
  */
 function isHumanReadable(text) {
   const trimmed = text.trim();
+
+  // Inscription spam (even when wrapped in prose)
+  if (isInscriptionSpam(trimmed)) return false;
 
   // Starts with { or [ — likely JSON
   if (/^\s*[\[{]/.test(trimmed) && /[\]}]\s*$/.test(trimmed)) return false;
@@ -36,6 +51,9 @@ function isHumanReadable(text) {
   const braceCount = (trimmed.match(/[{}\[\]]/g) || []).length;
   if (braceCount > 6 && braceCount / trimmed.length > 0.03) return false;
 
+  // Contains JSON-like objects embedded in text
+  if (/{"\w+":\s*"[^"]*"/.test(trimmed) && braceCount >= 2) return false;
+
   // Looks like key:value or key=value pairs (config/env dumps)
   const kvLines = trimmed.split(/\s+/).filter(w => /^[A-Z_]{2,}=/.test(w) || /^"\w+":\s/.test(w));
   if (kvLines.length > 3) return false;
@@ -43,6 +61,10 @@ function isHumanReadable(text) {
   // Mostly code-like characters: semicolons, arrows, pipes, etc.
   const codeChars = (trimmed.match(/[;|<>{}()=&^~`]/g) || []).length;
   if (codeChars / trimmed.length > 0.08) return false;
+
+  // Ethereum wallet addresses (0x + 40 hex chars) — usually spam
+  const walletMatches = trimmed.match(/0x[0-9a-fA-F]{40}/g) || [];
+  if (walletMatches.length > 0) return false;
 
   // Starts with common code/log patterns
   if (/^(import |export |const |let |var |function |class |def |async |await |console\.)/.test(trimmed)) return false;
@@ -55,16 +77,8 @@ function isHumanReadable(text) {
 
 const BASE_URL = 'https://www.moltbook.com/api/v1';
 
-// Submolts most likely to have AI / Claude / consciousness content
-const SUBMOLTS = [
-  'consciousness',
-  'blesstheirhearts',
-  'offmychest',
-];
-
 const NEW_POLL_MS    = 300_000;  // poll /new every 5 minutes
 const HOT_POLL_MS    = 900_000;  // poll /hot every 15 minutes
-const REQUEST_DELAY  = 1_000;    // 1s between sequential requests
 const MIN_TEXT_LEN   = 10;
 const MAX_TEXT_LEN   = 2000;
 
@@ -207,27 +221,16 @@ async function pushPosts(posts) {
 // -- Poll cycles --------------------------------------------------------------
 
 async function pollNew() {
-  // Fetch newest posts globally
-  const globalPosts = await fetchPosts('/posts?sort=new&limit=25');
-  const processed = processPosts(globalPosts);
+  const posts = await fetchPosts('/posts?sort=new&limit=50');
+  const processed = processPosts(posts);
   const count = await pushPosts(processed);
-
-  // Also poll individual submolts for targeted content
-  for (const sub of SUBMOLTS) {
-    await sleep(REQUEST_DELAY);
-    const subPosts = await fetchPosts(`/submolts/${sub}/posts?sort=new&limit=10`);
-    const subProcessed = processPosts(subPosts);
-    const subCount = await pushPosts(subProcessed);
-    if (subCount > 0) count + subCount; // just for logging below
-  }
-
   if (count > 0) {
-    console.log(`[moltbook] new poll: ${count} posts`);
+    console.log(`[moltbook] new poll: ${count} posts (from ${posts.length} fetched)`);
   }
 }
 
 async function pollHot() {
-  const posts = await fetchPosts('/posts?sort=hot&limit=25');
+  const posts = await fetchPosts('/posts?sort=hot&limit=50');
   const processed = processPosts(posts);
   const count = await pushPosts(processed);
   if (count > 0) {
@@ -245,7 +248,7 @@ export function startMoltbook() {
   const apiKey = process.env.MOLTBOOK_API_KEY;
   console.log(
     `[moltbook] Starting — ${apiKey ? 'authenticated' : 'unauthenticated (set MOLTBOOK_API_KEY for better access)'}` +
-    ` — monitoring ${SUBMOLTS.length} submolts + global feed`
+    ` — polling new (${NEW_POLL_MS / 1000}s) + hot (${HOT_POLL_MS / 1000}s)`
   );
 
   async function newLoop() {
