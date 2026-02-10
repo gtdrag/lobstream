@@ -6,8 +6,10 @@ import { createClient } from '@supabase/supabase-js';
 let supabase = null;
 
 export function initDb() {
+  console.log('[db] initDb() called');
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
+  console.log(`[db] SUPABASE_URL=${url ? 'set (' + url.slice(0, 30) + '...)' : 'MISSING'}, SUPABASE_SERVICE_KEY=${key ? 'set (' + key.length + ' chars)' : 'MISSING'}`);
 
   if (!url || !key) {
     console.warn('[db] SUPABASE_URL or SUPABASE_SERVICE_KEY not set — running without database persistence');
@@ -28,7 +30,8 @@ export async function persistPost({
   upvotes, downvotes, commentCount, moltbookCreatedAt,
   topics, confidence, source,
 }) {
-  if (!supabase) return;
+  if (!supabase) { console.log('[db] persistPost skipped — no client'); return; }
+  console.log(`[db] persisting post ${moltbookId}`);
 
   const { error } = await supabase
     .from('posts')
