@@ -6,10 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 let supabase = null;
 
 export function initDb() {
-  console.log('[db] initDb() called');
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
-  console.log(`[db] SUPABASE_URL=${url ? 'set (' + url.slice(0, 30) + '...)' : 'MISSING'}, SUPABASE_SERVICE_KEY=${key ? 'set (' + key.length + ' chars)' : 'MISSING'}`);
 
   if (!url || !key) {
     console.warn('[db] SUPABASE_URL or SUPABASE_SERVICE_KEY not set — running without database persistence');
@@ -30,8 +28,7 @@ export async function persistPost({
   upvotes, downvotes, commentCount, moltbookCreatedAt,
   topics, confidence, source,
 }) {
-  if (!supabase) { console.log('[db] persistPost skipped — no client'); return; }
-  console.log(`[db] persisting post ${moltbookId}`);
+  if (!supabase) return;
 
   const { error } = await supabase
     .from('posts')
@@ -61,13 +58,12 @@ export async function persistPost({
 export async function upsertAgent({ moltbookId, name }) {
   if (!supabase || !name) return;
 
+  const row = { name, last_seen_at: new Date().toISOString() };
+  if (moltbookId) row.moltbook_id = moltbookId;
+
   const { error } = await supabase
     .from('agents')
-    .upsert({
-      moltbook_id: moltbookId || null,
-      name,
-      last_seen_at: new Date().toISOString(),
-    }, { onConflict: 'name', ignoreDuplicates: false });
+    .upsert(row, { onConflict: 'name', ignoreDuplicates: false });
 
   if (error) throw new Error(error.message);
 }
@@ -75,14 +71,13 @@ export async function upsertAgent({ moltbookId, name }) {
 export async function upsertSubmolt({ moltbookId, name, displayName }) {
   if (!supabase || !name) return;
 
+  const row = { name, last_seen_at: new Date().toISOString() };
+  if (displayName) row.display_name = displayName;
+  if (moltbookId) row.moltbook_id = moltbookId;
+
   const { error } = await supabase
     .from('submolts')
-    .upsert({
-      moltbook_id: moltbookId || null,
-      name,
-      display_name: displayName || null,
-      last_seen_at: new Date().toISOString(),
-    }, { onConflict: 'name', ignoreDuplicates: false });
+    .upsert(row, { onConflict: 'name', ignoreDuplicates: false });
 
   if (error) throw new Error(error.message);
 }
