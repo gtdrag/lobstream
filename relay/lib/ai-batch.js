@@ -235,6 +235,7 @@ async function pushEnriched(post, relevance, sentiment, aiTier) {
     downvotes: post.downvotes,
     commentCount: post.commentCount,
     createdAt: post.createdAt,
+    moltbookId: post.moltbookId || null,
   });
 }
 

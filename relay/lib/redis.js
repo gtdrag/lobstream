@@ -8,7 +8,7 @@ export const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-export async function addMessage({ source, text, author, topics = [], confidence = 0, relevance, sentiment, ai_tier, imageUrl, upvotes, downvotes, commentCount, createdAt }) {
+export async function addMessage({ source, text, author, topics = [], confidence = 0, relevance, sentiment, ai_tier, imageUrl, upvotes, downvotes, commentCount, createdAt, moltbookId }) {
   const fields = {
     source,
     text: text || '',
@@ -25,6 +25,7 @@ export async function addMessage({ source, text, author, topics = [], confidence
   if (downvotes != null) fields.downvotes = downvotes.toString();
   if (commentCount != null) fields.commentCount = commentCount.toString();
   if (createdAt) fields.createdAt = createdAt;
+  if (moltbookId) fields.moltbookId = moltbookId;
 
   await redis.xadd(STREAM_KEY, '*', fields, { MAXLEN: MAX_STREAM_LENGTH, approximateMaxLen: true });
 }

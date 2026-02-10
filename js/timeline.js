@@ -253,6 +253,33 @@ export class Timeline {
       panel.appendChild(statsDiv);
     }
 
+    // Lazy comments section
+    if (entry.commentCount > 0 && entry.moltbookId) {
+      const commentsSection = document.createElement('div');
+      commentsSection.className = 'detail-comments';
+
+      const loadBtn = document.createElement('button');
+      loadBtn.className = 'detail-comments-btn';
+      loadBtn.textContent = `Load ${entry.commentCount} ${entry.commentCount === 1 ? 'reply' : 'replies'}`;
+      loadBtn.addEventListener('click', async () => {
+        loadBtn.disabled = true;
+        loadBtn.textContent = 'Loading...';
+        try {
+          const res = await fetch(`/api/comments?postId=${encodeURIComponent(entry.moltbookId)}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const { comments } = await res.json();
+          loadBtn.remove();
+          this._renderComments(commentsSection, comments);
+        } catch {
+          loadBtn.disabled = false;
+          loadBtn.textContent = `Load ${entry.commentCount} ${entry.commentCount === 1 ? 'reply' : 'replies'} (retry)`;
+        }
+      });
+
+      commentsSection.appendChild(loadBtn);
+      panel.appendChild(commentsSection);
+    }
+
     // Meta footer
     const meta = document.createElement('div');
     meta.className = 'detail-meta';
@@ -302,7 +329,61 @@ export class Timeline {
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 400);
   }
 
-  addPost(text, imageUrl, sentiment, author, source, { animate = true, upvotes = 0, downvotes = 0, commentCount = 0, createdAt = null } = {}) {
+  _renderComments(container, comments) {
+    if (!comments || comments.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'detail-comment';
+      empty.style.color = '#555';
+      empty.textContent = 'No replies found';
+      container.appendChild(empty);
+      return;
+    }
+
+    for (const c of comments) {
+      const el = document.createElement('div');
+      el.className = 'detail-comment';
+
+      const header = document.createElement('div');
+      header.className = 'detail-comment-header';
+
+      const authorLink = document.createElement('span');
+      authorLink.className = 'detail-comment-author';
+      authorLink.textContent = c.authorName || 'unknown-agent';
+      authorLink.addEventListener('click', () => {
+        this.closeDetail();
+        if (window.lobstream?.openAgentProfile) {
+          window.lobstream.openAgentProfile(c.authorName);
+        } else {
+          this.setAgentFilter(c.authorName);
+        }
+      });
+      header.appendChild(authorLink);
+
+      const time = document.createElement('span');
+      time.className = 'detail-comment-time';
+      time.textContent = formatTime(c.createdAt);
+      header.appendChild(time);
+
+      el.appendChild(header);
+
+      const text = document.createElement('div');
+      text.className = 'detail-comment-text';
+      text.innerHTML = autoLink(escapeHtml(c.content));
+      el.appendChild(text);
+
+      const net = (c.upvotes || 0) - (c.downvotes || 0);
+      if (net !== 0) {
+        const votes = document.createElement('div');
+        votes.className = 'detail-comment-votes';
+        votes.textContent = `${net > 0 ? '+' : ''}${net}`;
+        el.appendChild(votes);
+      }
+
+      container.appendChild(el);
+    }
+  }
+
+  addPost(text, imageUrl, sentiment, author, source, { animate = true, upvotes = 0, downvotes = 0, commentCount = 0, createdAt = null, moltbookId = null } = {}) {
     if (!text && !imageUrl) return;
 
     // Dedup
@@ -417,7 +498,7 @@ export class Timeline {
     const entry = {
       card, submolt, agentName, fullText, imageUrl, sentiment, source,
       timeLabel: formatTime(createdAt),
-      upvotes, downvotes, commentCount, createdAt,
+      upvotes, downvotes, commentCount, createdAt, moltbookId,
     };
 
     // Text

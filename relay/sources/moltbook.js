@@ -227,6 +227,7 @@ async function pushPosts(posts) {
       downvotes: post.downvotes,
       commentCount: post.commentCount,
       createdAt: post.createdAt,
+      moltbookId: post.id,
     };
 
     if (topics.length > 0 && aiEnqueue) {

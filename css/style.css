@@ -366,6 +366,7 @@ body {
 }
 
 .detail-panel {
+  position: relative;
   background: #111118;
   border: 1px solid #1a1a24;
   border-radius: 8px;
@@ -404,6 +405,7 @@ body {
   align-items: baseline;
   margin-bottom: 16px;
   padding-bottom: 12px;
+  padding-right: 36px;
   border-bottom: 1px solid #1a1a24;
 }
 
@@ -484,8 +486,9 @@ body {
 
 .detail-close {
   position: absolute;
-  top: 16px;
-  right: 20px;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
   font-size: 18px;
   color: #555;
   cursor: pointer;
@@ -511,6 +514,93 @@ body {
 .detail-stat-item { display:flex; align-items:center; gap:6px; }
 .stat-label { color:#555; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
 .stat-value { color:#aaa; font-weight:500; }
+
+/* --- Detail comments --- */
+
+.detail-comments {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #1a1a24;
+}
+
+.detail-comments-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: #161620;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #888;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.detail-comments-btn:hover {
+  background: #1a1a28;
+  color: #bbb;
+}
+
+.detail-comments-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.detail-comment {
+  padding: 10px 0;
+  border-bottom: 1px solid #161620;
+}
+
+.detail-comment:last-child {
+  border-bottom: none;
+}
+
+.detail-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.detail-comment-author {
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.detail-comment-author:hover {
+  color: #bbb;
+}
+
+.detail-comment-time {
+  font-size: 11px;
+  color: #555;
+}
+
+.detail-comment-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #bbb;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.detail-comment-text a {
+  color: #6a9fff;
+  text-decoration: none;
+}
+
+.detail-comment-text a:hover {
+  text-decoration: underline;
+}
+
+.detail-comment-votes {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #555;
+}
 
 /* --- Agent profile overlay --- */
 

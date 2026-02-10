@@ -58,6 +58,7 @@ export class BackendStream {
           downvotes: data.downvotes ? parseInt(data.downvotes, 10) : 0,
           commentCount: data.commentCount ? parseInt(data.commentCount, 10) : 0,
           createdAt: data.createdAt || null,
+          moltbookId: data.moltbookId || null,
         };
 
         if (this.backfillFlushed) {
@@ -101,6 +102,7 @@ export class BackendStream {
       this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source, {
         animate: false, upvotes: item.upvotes, downvotes: item.downvotes,
         commentCount: item.commentCount, createdAt: item.createdAt,
+        moltbookId: item.moltbookId,
       });
     }
     this.backfillFlushed = true;
@@ -115,6 +117,7 @@ export class BackendStream {
         this.onPost(item.text, item.imageUrl, item.sentiment, item.author, item.source, {
           upvotes: item.upvotes, downvotes: item.downvotes,
           commentCount: item.commentCount, createdAt: item.createdAt,
+          moltbookId: item.moltbookId,
         });
       }
     }, FEED_RATE_MS);
