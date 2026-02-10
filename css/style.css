@@ -63,6 +63,20 @@ body {
   50% { opacity: 0.4; box-shadow: 0 0 8px #e8254a; }
 }
 
+.sidebar-link {
+  display: block;
+  padding: 4px 12px 8px;
+  font-size: 11px;
+  color: #6a9fff;
+  text-decoration: none;
+  letter-spacing: 1px;
+}
+
+.sidebar-link:hover {
+  color: #8ab4ff;
+  text-decoration: underline;
+}
+
 /* --- Sidebar nav --- */
 
 #sidebar-nav {

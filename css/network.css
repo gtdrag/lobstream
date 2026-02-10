@@ -1,0 +1,136 @@
+body.network-page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a0f;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  color: #d0d0d0;
+  margin: 0;
+  padding: 0;
+}
+
+#network-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#network-controls {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  background: rgba(17, 17, 24, 0.85);
+  border: 1px solid #1a1a24;
+  border-radius: 6px;
+  padding: 14px 18px;
+  font-size: 11px;
+  color: #888;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  min-width: 180px;
+}
+
+.back-link {
+  color: #6a9fff;
+  text-decoration: none;
+  font-size: 11px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.back-link:hover {
+  color: #8ab4ff;
+  text-decoration: underline;
+}
+
+#network-stats {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+#network-controls label {
+  display: block;
+  margin-bottom: 4px;
+  color: #666;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#weight-slider {
+  width: 100%;
+  appearance: none;
+  height: 3px;
+  background: #222;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+#weight-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6a9fff;
+  cursor: pointer;
+}
+
+#weight-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6a9fff;
+  border: none;
+  cursor: pointer;
+}
+
+#node-tooltip {
+  position: fixed;
+  display: none;
+  background: rgba(13, 13, 20, 0.95);
+  border: 1px solid #1a1a24;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: #d0d0d0;
+  z-index: 20;
+  pointer-events: none;
+  max-width: 260px;
+  backdrop-filter: blur(8px);
+  line-height: 1.5;
+}
+
+#node-tooltip .tooltip-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+#node-tooltip .tooltip-desc {
+  color: #888;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+#node-tooltip .tooltip-stats {
+  color: #666;
+  font-size: 10px;
+}
+
+#loading-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #444;
+  font-size: 13px;
+  z-index: 5;
+}
